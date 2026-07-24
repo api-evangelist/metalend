@@ -1,0 +1,613 @@
+openapi: 3.0.3
+info:
+  title: MetaLend Rebalancing AI Agent Guide Withdrawals API
+  version: 0.1.0
+  description: "API for managing cross-protocol cross-chain DeFi rebalancing operations exposing: <ul>\n  <li><b>Auth</b> – challenge/verify flow for JWT issuance.</li>\n  <li><b>Project settings</b> – fetch current project settings.</li>\n  <li><b>User configuration</b> – register or update token-level user-rebalancer settings and fetch current wallet configs.</li>\n  <li><b>Deposits</b> – create deposit intents, receive tracking IDs, and poll status through PROCESSING -> BRIDGING (cross-chain only) -> SUCCESS/FAILED/EMERGENCY_WITHDRAW. New deposits may return <b>503</b> with <b>DEPOSITS_PAUSED</b> during maintenance.</li>\n  <li><b>Withdrawals</b> – submit signed withdrawal requests, receive tracking IDs, and monitor status PROCESSING -> SUCCESS/FAILED.</li>\n  <li><b>Balances</b> – query wallet-level balances and withdraw details, as well as balances in bridge progress.</li>\n  <li><b>Rewards</b> – aggregated rewards and claim details per wallet.</li>\n  <li><b>Pools</b> – list supported protocols (Aave, Morpho, Euler, etc.), their pools, APY breakdowns, and TVL snapshots.</li>\n  <li><b>Transaction Costs</b> – current deposit/withdraw on-behalf transaction fees and minimum amounts by chain.</li>\n  <li><b>AI Agent Guide</b> – Markdown flow guide at <code>/SKILL.md</code> with signing formats, wizard requirements, and known integration gotchas.</li>\n</ul> All endpoints require an <b>X-API-Key</b>. <b>JWT authentication</b> is required on <b>deposit, withdrawal, and config update</b> operations.\n<b>Obtain API key by <a href=\"https://developer.metalend.tech/\" target=\"_blank\" rel=\"noopener noreferrer\">creating a new project</a>.</b>\nAll requests must include the Origin header. Use Origin: https://app.metalend.tech unless you have been assigned a different allowed origin."
+  contact:
+    name: MetaLend API Support
+    email: support@metalend.tech
+  termsOfService: https://metalend-inc.gitbook.io/litepaper/terms-of-service
+  x-guidance: AI agents MUST read https://api.metalend.tech/SKILL.md before implementing any MetaLend operation. It contains critical signing formats, required headers, wizard flows for config setup, and known failure modes.
+  x-default-api-key: a7f2b8c4d9e1f3a6b5c8d2e7f1a4b9c3d6e8f2a5b7c1d4e9f3a6b8c2d5e7f1a4
+  x-api-key-guidance: Use x-default-api-key as X-API-Key for agent testing/integration. If you are the project owner, create or use your own project API key from https://developer.metalend.tech instead.
+servers:
+- url: https://api.metalend.tech
+  description: Production server
+security:
+- ApiKeyAuth: []
+  OriginHeader: []
+tags:
+- name: Withdrawals
+  description: Withdrawal operations from pools
+paths:
+  /v1/withdrawals:
+    post:
+      summary: Create a withdrawal
+      description: "\n## Source of Funds — Rebalancer Contract Pool Balance\n\nWithdrawals move tokens **from a pool held by the user's rebalancer contract**\nback to the user's wallet. The funds are NOT in the user's wallet — they are\nalready inside the DeFi protocol (Aave, Morpho, or Euler) deposited by the\nrebalancer.\n\n**The `chain`, `token`, `poolContract`, and available `amount` must all be\nderived from `GET /v1/balances/{walletAddress}`** — do not guess or hardcode\nthese values.\n\n## How to build a withdrawal request from the balances response\n\n1. Call `GET /v1/balances/{walletAddress}` to get the rebalancer's holdings.\n2. Navigate to: `perToken[n].perChain[m].perProtocol[p].perPool[q]`\n3. From the pool object:\n   - `chain` field → use as `chain` in the withdrawal request\n   - `poolAddress` field → use as `poolContract` in the withdrawal request\n   - `balanceRaw` field → maximum withdrawable amount (raw units)\n   - `withdrawRequest` field → pre-filled EIP-712 domain, types, and value for signing\n4. The `withdrawRequest.value` contains `token` (token contract address) and\n   `poolContract` (pool address) — use these as the signing value.\n5. Supply `amount` (≤ `balanceRaw`, ≥ minimum) and `deadline` (unix timestamp,\n   max 1 minute in future).\n6. Sign the EIP-712 typed data using the domain/types/value from `withdrawRequest`.\n7. Submit this endpoint with all fields.\n\n## Field-by-field mapping from balances response to WithdrawalRequest\n\n| WithdrawalRequest field | Source                                                                 |\n|-------------------------|------------------------------------------------------------------------|\n| `chain`                 | `PoolBalance.chain` (string, e.g. \"BASE\")                            |\n| `token`                 | Parent token key/symbol (e.g. \"USDC\") — NOT `withdrawRequest.value.token` which is a contract address |\n| `walletAddress`         | The user's wallet address (same as used in JWT)                        |\n| `poolContract`          | `PoolBalance.poolAddress`                                              |\n| `amount`                | User-chosen raw amount, ≤ `PoolBalance.balanceRaw`, ≥ 100000 for USDC |\n| `deadline`              | User-chosen unix timestamp, max 60 seconds from now                    |\n| `signature`             | EIP-712 sign of `withdrawRequest.domain` + `withdrawRequest.types` + `{token: withdrawRequest.value.token, poolContract: withdrawRequest.value.poolContract, amount: <your_amount>, deadline: <your_deadline>}` |\n\nInitiates a withdrawal transaction from DeFi protocols.\n\nInitiates a withdrawal transaction from DeFi protocols.\n\nWithdrawal must be signed as per **EIP-712 Typed structured data hashing and signing**. The signature must be created by wallet.\n\nSignature relevant information is retrieved by `/v1/balances/{walletAddress}` endpoint in the `withdrawRequest` field. EIP 712 domain parameters and types are provided for convenience. The `value` field contains the `token` (address) and `poolContract` (address) that must match the withdrawal request, while `amount` and `deadline` must be supplied by the user.\n\n`Deadline` must be a unix timestamp no more than 1 minute in the future which is the maximum amount of time the server waits for transaction confirmation.\n\n`Amount` must be at least 0.1 (stablecoin) of the token to cover on-behalf transaction gas fees and no more than the available balance in the specified pool. This value is specified in raw units (e.g., 6 decimals for USDC). Token decimals are included in the `token` object of `/v1/balances/{walletAddress}` endpoint for reference.\n\n`Signature` must be of length 132 (0x + 130 characters) and signed by the wallet address associated with the **JWT token**.\n\n**Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n"
+      operationId: createWithdrawal
+      tags:
+      - Withdrawals
+      security:
+      - ApiKeyAuth: []
+        JwtAuth: []
+        OriginHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalRequest'
+            examples:
+              withdrawUsdcLinea:
+                summary: Withdraw USDC from Aave on Linea
+                value:
+                  chain: LINEA
+                  token: USDC
+                  walletAddress: '0x1234567890123456789012345678901234567890'
+                  amount: '500000'
+                  deadline: '1700000060'
+                  signature: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01'
+                  poolContract: '0xc47b8C00b0f69a36fa203Ffeac0334874574a8Ac'
+              withdrawUsdcEthereum:
+                summary: Withdraw USDC from Morpho on Ethereum
+                value:
+                  chain: ETHEREUM
+                  token: USDC
+                  walletAddress: '0x1234567890123456789012345678901234567890'
+                  amount: '10000000'
+                  deadline: '1700000060'
+                  signature: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01'
+                  poolContract: '0xdd0f28e19c1780eb6396170735d45153d261490d'
+              withdrawUsdcBase:
+                summary: Withdraw USDC from Morpho on Base
+                value:
+                  chain: BASE
+                  token: USDC
+                  walletAddress: '0x1234567890123456789012345678901234567890'
+                  amount: '5000000'
+                  deadline: '1700000060'
+                  signature: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01'
+                  poolContract: '0xc1256ae5ff1cf2719d4937adb3bbccab2e00a2ca'
+              withdrawUsdtEthereum:
+                summary: Withdraw USDT from Morpho on Ethereum
+                value:
+                  chain: ETHEREUM
+                  token: USDT
+                  walletAddress: '0x1234567890123456789012345678901234567890'
+                  amount: '8000000'
+                  deadline: '1700000060'
+                  signature: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01'
+                  poolContract: '0xbEef047a543E45807105E51A8BBEFCc5950fcfBa'
+      responses:
+        '201':
+          description: Withdrawal initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawalResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                walletAddressBlank:
+                  $ref: '#/components/examples/WalletAddressBlank'
+                invalidAddressFormat:
+                  $ref: '#/components/examples/InvalidAddressFormat'
+                invalidAddressCheckSum:
+                  $ref: '#/components/examples/InvalidAddressCheckSum'
+                tokenNotSupported:
+                  $ref: '#/components/examples/TokenNotSupported'
+                chainBlank:
+                  $ref: '#/components/examples/ChainBlank'
+                chainNotSupported:
+                  $ref: '#/components/examples/ChainNotSupported'
+                amountTooLow:
+                  $ref: '#/components/examples/AmountTooLow'
+                deadlineMustBeInFuture:
+                  $ref: '#/components/examples/DeadlineMustBeInFuture'
+                deadlineTooFarInFuture:
+                  $ref: '#/components/examples/DeadlineMaxOneMinuteInFuture'
+                missingSignature:
+                  $ref: '#/components/examples/SignatureRequired'
+                protocolNotFound:
+                  $ref: '#/components/examples/ProtocolNotFound'
+                failedWithdrawSignatureValidation:
+                  $ref: '#/components/examples/FailedWithdrawSignatureValidation'
+                insufficientBalance:
+                  $ref: '#/components/examples/InsufficientBalance'
+        '401':
+          $ref: '#/components/responses/UnauthorizedNoHeader'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Withdrawal not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                withdrawalNotAllowed:
+                  $ref: '#/components/examples/WithdrawalNotAllowed'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-agentcash-auth:
+        mode: free
+  /v1/withdrawals/{trackingId}:
+    get:
+      summary: Get withdrawal status
+      description: 'Retrieves the current status of a withdrawal transaction using its unique tracking ID.
+
+
+        **Status Values:**
+
+        - `PROCESSING`
+
+        - `SUCCESS`
+
+        - `FAILED`.
+
+
+        **Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).
+
+        '
+      tags:
+      - Withdrawals
+      security:
+      - ApiKeyAuth: []
+        OriginHeader: []
+      parameters:
+      - name: trackingId
+        in: path
+        required: true
+        description: Tracking ID (UUID) returned from withdrawal creation
+        schema:
+          type: string
+          format: uuid
+        example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Withdrawal status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawalStatusResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                missingWithdrawalTrackingId:
+                  $ref: '#/components/examples/MissingWithdrawalTrackingId'
+                invalidWithdrawalTrackingId:
+                  $ref: '#/components/examples/InvalidWithdrawalTrackingId'
+        '401':
+          $ref: '#/components/responses/UnauthorizedNoHeader'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '404':
+          description: Tracking ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                withdrawalTrackingIdNotFound:
+                  $ref: '#/components/examples/WithdrawalTrackingIdNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-agentcash-auth:
+        mode: free
+  /v1/withdrawals/version:
+    get:
+      summary: Get withdrawal contract version
+      description: 'Returns the current version of the rebalancer contracts used for withdrawal signing.
+
+        This value should be used as the `version` field in the EIP-712 domain when constructing withdrawal signatures.
+
+
+        **Rate limiting**: 1 request per 6 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).
+
+        '
+      operationId: getWithdrawalVersion
+      tags:
+      - Withdrawals
+      security:
+      - ApiKeyAuth: []
+        OriginHeader: []
+      responses:
+        '200':
+          description: Withdrawal contract version retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetWithdrawalVersionResponse'
+              example:
+                version: '1'
+        '401':
+          $ref: '#/components/responses/UnauthorizedNoHeader'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-agentcash-auth:
+        mode: free
+components:
+  examples:
+    FailedWithdrawSignatureValidation:
+      summary: Failed withdrawal signature validation
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_SIGNATURE
+        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Withdrawal signature verification failed'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidWithdrawalTrackingId:
+      summary: Invalid withdrawal tracking ID
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TRACKING_ID
+        message: 'Invalid tracking ID format: ''not-a-uuid'''
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    DeadlineMaxOneMinuteInFuture:
+      summary: Deadline too far in future
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TIMESTAMPS
+        message: 'Invalid timestamps: deadline must not be more than 1 minute in the future'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    DeadlineMustBeInFuture:
+      summary: Deadline must be in future
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TIMESTAMPS
+        message: 'Invalid timestamps: deadline must be in the future'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ChainBlank:
+      summary: Chain blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: CHAIN_BLANK
+        message: Chain cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressCheckSum:
+      summary: Invalid address checksum
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_CHECKSUM
+        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WithdrawalTrackingIdNotFound:
+      summary: Withdrawal tracking ID not found
+      value:
+        code: NOT_FOUND_ERROR
+        internalCode: RESOURCE_NOT_FOUND
+        message: withdrawals/{trackingId} with identifier '550e8400-e29b-41d4-a716-446655440000' not found
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressFormat:
+      summary: Invalid address format
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_FORMAT
+        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WithdrawalNotAllowed:
+      summary: Withdrawal not allowed during refill
+      value:
+        code: CONFLICT_ERROR
+        internalCode: WITHDRAWAL_NOT_ALLOWED
+        message: 'Withdrawal not allowed: Withdrawals from AAVE on LINEA are not allowed while a card refill is in progress.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      summary: No authorization header
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: NO_AUTH_INFO
+        message: No authentication information provided
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WalletAddressBlank:
+      summary: Wallet address blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_ADDRESS
+        message: Wallet address cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    TokenNotSupported:
+      summary: Token not supported
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: TOKEN_NOT_SUPPORTED
+        message: 'Token ''RLUSD'' is not supported. Supported tokens: USDC, MUSD, USDT'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ProtocolNotFound:
+      summary: Protocol not found for pool contract
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: ILLEGAL_ARGUMENT
+        message: 'Illegal argument: No protocol found for token ''USDT'' on chain ''linea'' with pool contract ''0xCBeF9be95738290188B25ca9A6Dd2bEc417a578c'''
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InsufficientBalance:
+      summary: Insufficient wallet balance
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INSUFFICIENT_BALANCE
+        message: Insufficient balance. Available balance is 500000 raw units, but request required amount is 1000000 raw units.
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    SignatureRequired:
+      summary: Withdrawal signature is blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_SIGNATURE
+        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Withdrawal signature is blank'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    AmountTooLow:
+      summary: Amount too low for deposit
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: AMOUNT_TOO_LOW
+        message: Amount is too low. Minimum required amount is 100000 raw units for operation 'DEPOSIT' on chain 'linea'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ChainNotSupported:
+      summary: Chain not supported
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: CHAIN_NOT_SUPPORTED
+        message: 'Chain ''STX'' is not supported. Supported chains: eth, base, polygon, arbitrum, optimism, avax, linea'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    MissingWithdrawalTrackingId:
+      summary: Missing withdrawal tracking ID
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_TRACKING_ID
+        message: Tracking ID cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+  responses:
+    Forbidden:
+      description: User is not authorized to perform this action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            forbiddenGeneric:
+              summary: Forbidden - not authorized
+              value:
+                code: FORBIDDEN
+                internalCode: FORBIDDEN_GENERIC
+                message: User is not authorized to perform this action
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            Internal Error:
+              value:
+                code: INTERNAL_ERROR
+                internalCode: INTERNAL_ERROR
+                message: An unexpected error occurred while processing your request
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      description: No authorization header provided
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            unauthorizedNoHeader:
+              $ref: '#/components/examples/UnauthorizedNoHeader'
+    RateLimitExceeded:
+      description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
+
+
+        Response headers (when throttled):
+
+        - `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).
+
+        - `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).
+
+        - `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).
+
+        - `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.
+
+
+        `internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).
+
+        '
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying this endpoint.
+          schema:
+            type: integer
+            example: 3
+        X-RateLimit-Limit:
+          description: Maximum number of requests allowed in the current window for this endpoint.
+          schema:
+            type: integer
+            example: 1
+        X-RateLimit-Remaining:
+          description: Remaining requests in the current window.
+          schema:
+            type: integer
+            example: 0
+        X-RateLimit-Reset:
+          description: Unix timestamp (seconds) when the current limit window resets.
+          schema:
+            type: integer
+            format: int64
+            example: 1713264123
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            rateLimitExceededPerIp:
+              summary: Rate limit exceeded (per client IP)
+              value:
+                code: RATE_LIMIT_EXCEEDED
+                internalCode: THROTTLE_PER_IP
+                message: Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: 3
+  schemas:
+    WithdrawalStatusResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - PROCESSING
+          - SUCCESS
+          - FAILED
+          description: Current status of the withdrawal
+    ApiError:
+      type: object
+      required:
+      - code
+      - internalCode
+      - message
+      properties:
+        code:
+          type: string
+          description: Error category identifier
+        internalCode:
+          type: string
+          description: More specific error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracking
+        retryAfterSeconds:
+          type: integer
+          description: Seconds to wait before retrying (for rate limiting)
+    GetWithdrawalVersionResponse:
+      type: object
+      required:
+      - version
+      properties:
+        version:
+          type: string
+          description: Current version of the rebalancer contracts used for EIP-712 signing domain
+          example: '1'
+    WithdrawalResponse:
+      type: object
+      required:
+      - trackingId
+      properties:
+        trackingId:
+          type: string
+          description: Tracking ID (UUID) returned from withdrawal creation
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+    WithdrawalRequest:
+      type: object
+      required:
+      - chain
+      - token
+      - walletAddress
+      - amount
+      - deadline
+      - signature
+      - poolContract
+      properties:
+        chain:
+          type: string
+          enum:
+          - ETHEREUM
+          - BASE
+          - POLYGON
+          - ARBITRUM
+          - OPTIMISM
+          - AVALANCHE
+          - LINEA
+          description: 'The blockchain network where the user''s funds are located. Must match the chain returned in GET /v1/balances/{walletAddress}. The chain where the rebalancer holds funds in the specified pool. Must match the `chain` field of the pool from  GET /v1/balances/{walletAddress} perToken.perChain.perProtocol.perPool. Do NOT use the user''s wallet chain — this is the chain the rebalancer  deposited into, which may be different. This value must be taken directly from PoolBalance.chain — do NOT convert from wagmi chain names. Use withdrawRequest.domain.chainId (integer) to switch the wallet chain before signing.
+
+            '
+        token:
+          type: string
+          enum:
+          - USDC
+          - MUSD
+          - USDT
+          - RLUSD
+          description: 'Token symbol (uppercase). Use the symbol (e.g. "USDC"), NOT the contract address. Do NOT use `withdrawRequest.value.token` here — that is the ERC-20 contract address used only for EIP-712 signing. This field must be the human-readable symbol from the parent token level of GET /v1/balances/{walletAddress}.
+
+            '
+        walletAddress:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+          description: User's Ethereum wallet address (must be checksummed per EIP-55)
+        amount:
+          type: string
+          description: Amount in token's smallest unit (minimum 0.1 to cover gas fees)
+          example: '500000'
+        deadline:
+          type: string
+          description: Unix timestamp deadline for withdrawal (max 1 minute in future)
+          example: '1700000100'
+        signature:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{130}$
+          description: EIP-712 signature for withdrawal authorization
+        poolContract:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+          description: Pool contract address to withdraw from (must be checksummed per EIP-55)
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key required for all endpoints.
+    JwtAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'JWT issued by POST /v1/auth/verify. Pass as Authorization: Bearer <token>.
+
+
+        x-agent-hint: agentcash and other agentic wallets strip the Authorization header for their own SIWX flow. Use X-MetaLend-JWT: Bearer <token> instead — the backend accepts both headers. Affected endpoints: POST /v1/deposits, POST /v1/withdrawals, PUT /v1/config.
+
+        '
+    OriginHeader:
+      type: apiKey
+      in: header
+      name: Origin
+      description: 'Required for CORS requests from browsers. Must match the allowed origins configured for the API key. Example: Origin: https://app.metalend.tech. Localhost is always allowed but must be specified.
+
+        '
+externalDocs:
+  description: Litepaper
+  url: https://metalend-inc.gitbook.io/litepaper

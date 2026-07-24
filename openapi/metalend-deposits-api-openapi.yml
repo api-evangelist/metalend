@@ -1,0 +1,691 @@
+openapi: 3.0.3
+info:
+  title: MetaLend Rebalancing AI Agent Guide Deposits API
+  version: 0.1.0
+  description: "API for managing cross-protocol cross-chain DeFi rebalancing operations exposing: <ul>\n  <li><b>Auth</b> – challenge/verify flow for JWT issuance.</li>\n  <li><b>Project settings</b> – fetch current project settings.</li>\n  <li><b>User configuration</b> – register or update token-level user-rebalancer settings and fetch current wallet configs.</li>\n  <li><b>Deposits</b> – create deposit intents, receive tracking IDs, and poll status through PROCESSING -> BRIDGING (cross-chain only) -> SUCCESS/FAILED/EMERGENCY_WITHDRAW. New deposits may return <b>503</b> with <b>DEPOSITS_PAUSED</b> during maintenance.</li>\n  <li><b>Withdrawals</b> – submit signed withdrawal requests, receive tracking IDs, and monitor status PROCESSING -> SUCCESS/FAILED.</li>\n  <li><b>Balances</b> – query wallet-level balances and withdraw details, as well as balances in bridge progress.</li>\n  <li><b>Rewards</b> – aggregated rewards and claim details per wallet.</li>\n  <li><b>Pools</b> – list supported protocols (Aave, Morpho, Euler, etc.), their pools, APY breakdowns, and TVL snapshots.</li>\n  <li><b>Transaction Costs</b> – current deposit/withdraw on-behalf transaction fees and minimum amounts by chain.</li>\n  <li><b>AI Agent Guide</b> – Markdown flow guide at <code>/SKILL.md</code> with signing formats, wizard requirements, and known integration gotchas.</li>\n</ul> All endpoints require an <b>X-API-Key</b>. <b>JWT authentication</b> is required on <b>deposit, withdrawal, and config update</b> operations.\n<b>Obtain API key by <a href=\"https://developer.metalend.tech/\" target=\"_blank\" rel=\"noopener noreferrer\">creating a new project</a>.</b>\nAll requests must include the Origin header. Use Origin: https://app.metalend.tech unless you have been assigned a different allowed origin."
+  contact:
+    name: MetaLend API Support
+    email: support@metalend.tech
+  termsOfService: https://metalend-inc.gitbook.io/litepaper/terms-of-service
+  x-guidance: AI agents MUST read https://api.metalend.tech/SKILL.md before implementing any MetaLend operation. It contains critical signing formats, required headers, wizard flows for config setup, and known failure modes.
+  x-default-api-key: a7f2b8c4d9e1f3a6b5c8d2e7f1a4b9c3d6e8f2a5b7c1d4e9f3a6b8c2d5e7f1a4
+  x-api-key-guidance: Use x-default-api-key as X-API-Key for agent testing/integration. If you are the project owner, create or use your own project API key from https://developer.metalend.tech instead.
+servers:
+- url: https://api.metalend.tech
+  description: Production server
+security:
+- ApiKeyAuth: []
+  OriginHeader: []
+tags:
+- name: Deposits
+  description: Deposit operations for rebalancing
+paths:
+  /v1/deposits:
+    post:
+      summary: Create a deposit
+      description: "Initiates a deposit transaction to move funds into an optimal DeFi protocol.<br><br>\nUser owned **rebalancer contract** must be pre-approved to spend tokens. The address of this contract is returned by the `GET /v1/config/{walletAddress}` endpoint. This contract gets deployed during first deposit and its address is pre-computed using CREATE2.<br><br>\nBoth **signature-based (gasless)** and **approval-based** approvals are supported.<br><br>\nActual deposit transaction is executed by an operator on behalf of the user after validating the request and JWT token.\n\n## Required Fields (All Deposits)\n\nThese fields are **always required** regardless of deposit method:\n- `token`: The symbol of the deposit token (e.g., \"USDC\", \"USDT\", \"MUSD\")\n- `walletAddress`: The user address making the deposit (must match JWT token). Currently only EOAs are supported (no smart contract wallets).\n- `amount`: The amount to deposit in token's raw unit (e.g., for USDC with 6 decimals, \"1000000\" = 1 USDC). Token details can be found in the `GET /v1/pools` endpoint. Minimum deposit amount is 0.1 of the token to cover gas fees for on behalf transaction.\n\n## Deposit Methods\n\n### Signature-Based Deposits (EIP-3009)\nSupported for **USDC** and **MUSD** tokens. This method enables gasless approval where \nthe user signs an authorization permit off-chain, and MetaLend executes the transfer on-chain.\n\n**Additional required fields:**\n- `signature`: The user's signature authorizing the transfer\n- `validAfter`: Unix timestamp indicating when the signature becomes valid\n- `validBefore`: Unix timestamp indicating when the signature expires. This must be greater than `validAfter` and within a short time window (max 1 minute in future).\n- `nonce`: A unique 32-byte hex string to prevent replay attacks\n- `tokenName`: The official name of the token (e.g., \"USD Coin\"), can be read on token contract (ERC20 standard).\n- `tokenVersion`: The token contract version, can be read on token contract (ERC20 standard).\n\nSign `ReceiveWithAuthorization` EIP-712 typed data structure as defined by the token contract.\n\n### Approval-Based Deposits\nSupported for **USDT, USDC, MUSD**. This method requires the user \nto approve the rebalancer contract before initiating the deposit by sending a transaction.\n\n**Additional requirements:**\n- Standard ERC-20 approval via the token contract before calling this endpoint\n- Only the base required fields (chain, token, walletAddress, amount) are allowed in the request\n- Do NOT include signature, timestamp, or nonce fields for approval-based deposits\n\n## Authentication & Security\n\n- Requires JWT authentication via JWT token in the Authorization header\n- The JWT must contain the same wallet address as specified in the request body\n\n## Maintenance — deposits paused\n\nMetaLend can temporarily pause **new** deposit creation while other API features (withdrawals, balances, config, pools, etc.) stay available.\n\nWhen paused, this endpoint returns **`503 Service Unavailable`** with `internalCode` **`DEPOSITS_PAUSED`** and does not create a deposit or return a tracking ID.\n\n## Processing Flow\n\n1. Check whether deposits are paused\n2. JWT verification to ensure the caller owns the specified wallet\n3. Request validation (chain, token, amount, address, signature/approval requirements)\n4. Deposit request is queued for processing with a unique tracking ID\n5. Returns immediately tracking ID\n6. Use `GET /v1/deposits/{trackingId}` to monitor the deposit progress\n\n## Response\n\nReturns a **tracking ID** that can be used to poll the deposit status. The tracking ID is:\n- A randomly generated UUID\n\nThe tracking ID can be used with the status endpoint \nto check if the deposit was successful, failed, is still processing or is bridging.\n\n## Source of Funds — User's Own Wallet ERC20 Balance\n\nDeposits move tokens **from the user's own wallet** (their personal ERC20 balance \non-chain) into a DeFi protocol via the MetaLend rebalancer contract.\n\n**The `chain` field must be the chain where the user currently holds the ERC20 token \nbalance in their wallet.** For example, if the user has USDC on Ethereum, \n`chain` must be `\"ETHEREUM\"`. If they have USDC on Base, `chain` must be `\"BASE\"`.\n\nBefore calling this endpoint:\n1. Check the user's ERC20 balance: `token.balanceOf(userWalletAddress)` on the \n  target chain — this is what they are depositing from.\n2. For **approval-based** deposits: call `token.approve(rebalancerAddress, amount)` \n  on the same chain before calling this endpoint.\n3. For **signature-based** deposits (USDC/MUSD only): sign the `ReceiveWithAuthorization` \n  permit off-chain — no on-chain approval transaction needed.\n\nThe rebalancer contract address to approve is returned by \n`GET /v1/config/{walletAddress}` in the `rebalancerAddress` field.\n\n## Notes\n- Smart contract wallets that do not comply with standard signature length are currently not supported\n- For signature-based deposits, ensure timestamps are within valid range\n\n**Rate limiting**: 1 request per 6 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n"
+      operationId: createDeposit
+      tags:
+      - Deposits
+      security:
+      - ApiKeyAuth: []
+        JwtAuth: []
+        OriginHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositRequest'
+            examples:
+              signatureBasedUsdcLinea:
+                summary: Signature-based deposit — USDC on Linea
+                value:
+                  chain: LINEA
+                  token: USDC
+                  walletAddress: '0x1234567890123456789012345678901234567890'
+                  amount: '1000000'
+                  validAfter: '1700000000'
+                  validBefore: '1700000100'
+                  nonce: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+                  signature: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01'
+                  tokenName: USD Coin
+                  tokenVersion: '2'
+              signatureBasedUsdcEth:
+                summary: Signature-based deposit — USDC on Ethereum
+                value:
+                  chain: ETHEREUM
+                  token: USDC
+                  walletAddress: '0x1234567890123456789012345678901234567890'
+                  amount: '5000000'
+                  validAfter: '1700000000'
+                  validBefore: '1700000100'
+                  nonce: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
+                  signature: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01'
+                  tokenName: USD Coin
+                  tokenVersion: '2'
+              approvalBasedUsdtEthereum:
+                summary: Approval-based deposit — USDT on Ethereum
+                value:
+                  chain: ETHEREUM
+                  token: USDT
+                  walletAddress: '0x1234567890123456789012345678901234567890'
+                  amount: '1000000'
+              approvalBasedUsdcBase:
+                summary: Approval-based deposit — USDC on Base
+                value:
+                  chain: BASE
+                  token: USDC
+                  walletAddress: '0x1234567890123456789012345678901234567890'
+                  amount: '2000000'
+              approvalBasedUsdcArbitrum:
+                summary: Approval-based deposit — USDC on Arbitrum
+                value:
+                  chain: ARBITRUM
+                  token: USDC
+                  walletAddress: '0x1234567890123456789012345678901234567890'
+                  amount: '3000000'
+      responses:
+        '201':
+          description: Deposit initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                walletAddressBlank:
+                  $ref: '#/components/examples/WalletAddressBlank'
+                invalidAddressFormat:
+                  $ref: '#/components/examples/InvalidAddressFormat'
+                invalidAddressCheckSum:
+                  $ref: '#/components/examples/InvalidAddressCheckSum'
+                signatureNotAllowed:
+                  $ref: '#/components/examples/SignatureNotAllowed'
+                invalidTokenNameOrVersion:
+                  $ref: '#/components/examples/InvalidTokenNameOrVersion'
+                partialSignatureFields:
+                  $ref: '#/components/examples/PartialSignatureFields'
+                tokenNotSupported:
+                  $ref: '#/components/examples/TokenNotSupported'
+                chainBlank:
+                  $ref: '#/components/examples/ChainBlank'
+                chainNotSupported:
+                  $ref: '#/components/examples/ChainNotSupported'
+                amountTooLow:
+                  $ref: '#/components/examples/AmountTooLow'
+                invalidTimestampBeforeGreaterThanAfter:
+                  $ref: '#/components/examples/InvalidTimestampBeforeGreaterThanAfter'
+                invalidTimestampAfterMustBeInPastOrNow:
+                  $ref: '#/components/examples/InvalidTimestampAfterMustBeInPastOrNow'
+                invalidTimestampBeforeMustBeInFuture:
+                  $ref: '#/components/examples/InvalidTimestampBeforeMustBeInFuture'
+                invalidTimestampBeforeMustBeAtMostOneMinuteInFuture:
+                  $ref: '#/components/examples/InvalidTimestampBeforeMustBeAtMostOneMinuteInFuture'
+                insufficientApproval:
+                  $ref: '#/components/examples/InsufficientApproval'
+                tokenNotSupportedOnChain:
+                  $ref: '#/components/examples/TokenNotSupportedOnChain'
+                insufficientBalance:
+                  $ref: '#/components/examples/InsufficientBalance'
+                depositInvalidSignature:
+                  $ref: '#/components/examples/DepositInvalidSignature'
+        '401':
+          $ref: '#/components/responses/UnauthorizedNoHeader'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: Service unavailable — deposits paused (maintenance)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                depositsPaused:
+                  $ref: '#/components/examples/DepositsPaused'
+      x-agentcash-auth:
+        mode: free
+  /v1/deposits/{trackingId}:
+    get:
+      summary: Get deposit status
+      description: "Retrieves the current status and details of a deposit transaction using its unique tracking ID.\n\nThis endpoint allows you to monitor the progress of a deposit from initiation to completion. \nThe tracking ID is returned when you create a deposit in UUID format.\n\nPlease be aware that if you see failed state, it can be also due to high gas fees, max allowed is 1 USD in gas fees, otherwise it will fail.\n\n**Status Values** (returned in `status`):\n- `PROCESSING`: Deposit is queued or being handled on the source chain.\n- `BRIDGING` (cross-chain only): Source-side funds movement succeeded and is bridging to the destination chain. Same-chain deposits go straight to final `SUCCESS` or `FAILED` status.\n- `SUCCESS`: Deposit has been successfully completed and funds are in the protocol.\n- `FAILED`: Deposit transaction has failed (e.g., insufficient gas, transaction reverted).\n- `EMERGENCY_WITHDRAW`: Destination-side deposit could not complete; funds were recovered via emergency withdrawal.\n\nThe API only exposes the five values above. Any other internal persistence state is mapped to `PROCESSING` for this response until the flow resolves.\n\n**Response Details:**\nWhen successful, the response includes:\n- Current deposit status (\"SUCCESS\")\n- Target protocol name (e.g., \"Aave\", \"Morpho\", \"Euler\") where funds were deposited\n- Pool/vault contract address receiving the funds\n- Blockchain network where the deposit occurred\n\n**Use Cases:**\n- Poll this endpoint to track deposit progress after creation\n- Verify successful completion before proceeding with other operations\n- Display real-time status updates to users in your application\n\n**Note:** If you receive a error code, the tracking ID is probably invalid or no deposit exists for that ID.\n\n**Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n"
+      operationId: getDepositStatus
+      tags:
+      - Deposits
+      security:
+      - ApiKeyAuth: []
+        OriginHeader: []
+      parameters:
+      - name: trackingId
+        in: path
+        required: true
+        description: Tracking ID (UUID) returned from deposit creation
+        schema:
+          type: string
+        example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Deposit status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositStatusResponse'
+              examples:
+                processing:
+                  summary: Deposit picked up, waiting for on-chain execution
+                  value:
+                    status: PROCESSING
+                    protocol: null
+                    pool: null
+                    chain: base
+                bridging:
+                  summary: Cross-chain deposit — source tx done, bridge in progress
+                  description: Details of the target pool, protocol and chain.
+                  value:
+                    status: BRIDGING
+                    protocol: Aave
+                    pool: '0xc47b8C00b0f69a36fa203Ffeac0334874574a8Ac'
+                    chain: base
+                success:
+                  summary: Deposit completed successfully
+                  value:
+                    status: SUCCESS
+                    protocol: Aave
+                    pool: '0xc47b8C00b0f69a36fa203Ffeac0334874574a8Ac'
+                    chain: base
+                failed:
+                  summary: Deposit failed
+                  value:
+                    status: FAILED
+                    protocol: null
+                    pool: null
+                    chain: base
+                emergencyWithdraw:
+                  summary: Destination deposit failed — funds emergency-withdrawn
+                  value:
+                    status: EMERGENCY_WITHDRAW
+                    protocol: Aave
+                    pool: '0xc47b8C00b0f69a36fa203Ffeac0334874574a8Ac'
+                    chain: base
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                missingTrackingId:
+                  $ref: '#/components/examples/MissingTrackingId'
+                invalidTrackingId:
+                  $ref: '#/components/examples/InvalidTrackingId'
+        '401':
+          $ref: '#/components/responses/UnauthorizedNoHeader'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '404':
+          description: Tracking ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                trackingIdNotFound:
+                  $ref: '#/components/examples/TrackingIdNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-agentcash-auth:
+        mode: free
+components:
+  schemas:
+    DepositStatusResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - PROCESSING
+          - BRIDGING
+          - SUCCESS
+          - FAILED
+          - EMERGENCY_WITHDRAW
+          description: 'Current status of the deposit.
+
+            - `PROCESSING`: Deposit is queued or being handled on the source chain.
+
+            - `BRIDGING` (cross-chain only): Source-side funds movement succeeded and is bridging to the destination chain. Same-chain deposits go straight to final `SUCCESS` or `FAILED` status.
+
+            - `SUCCESS`: Deposit has been successfully completed and funds are in the protocol.
+
+            - `FAILED`: Deposit transaction has failed (e.g., insufficient gas, transaction reverted).
+
+            - `EMERGENCY_WITHDRAW`: Destination-side deposit could not complete; funds were recovered via emergency withdrawal.
+
+            '
+        protocol:
+          type: string
+          nullable: true
+          enum:
+          - Aave
+          - Morpho
+          - Euler
+          description: Target protocol once known; may be null while still in `PROCESSING`.
+          example: Aave
+        pool:
+          type: string
+          nullable: true
+          description: Target pool address once known; may be null while still in `PROCESSING`.
+          example: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+        chain:
+          type: string
+          nullable: true
+          description: Target chain once known; may be null while still in `PROCESSING`.
+          example: linea
+    DepositResponse:
+      type: object
+      required:
+      - trackingId
+      properties:
+        trackingId:
+          type: string
+          description: Unique identifier to track deposit status
+          example: 550e8400-e29b-41d4-a716-446655440000
+    ApiError:
+      type: object
+      required:
+      - code
+      - internalCode
+      - message
+      properties:
+        code:
+          type: string
+          description: Error category identifier
+        internalCode:
+          type: string
+          description: More specific error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracking
+        retryAfterSeconds:
+          type: integer
+          description: Seconds to wait before retrying (for rate limiting)
+    DepositRequest:
+      type: object
+      required:
+      - chain
+      - token
+      - walletAddress
+      - amount
+      properties:
+        chain:
+          type: string
+          enum:
+          - ETHEREUM
+          - BASE
+          - POLYGON
+          - ARBITRUM
+          - OPTIMISM
+          - AVALANCHE
+          - LINEA
+          description: 'The blockchain network for this deposit. IMPORTANT: Do NOT derive this from wagmi''s chain.name or chain.network — those use different naming conventions. Always use PoolBalance.chain from GET /v1/balances which is already in the correct API format. For chain switching before the on-chain approve() call, use PoolBalance.chainId (integer EVM chain ID) with switchChain({ chainId }).
+
+            If you must map from wagmi/viem chainId to this field, use: - chainId 1       → "ETHEREUM" - chainId 8453    → "BASE" - chainId 137     → "POLYGON" - chainId 42161   → "ARBITRUM" - chainId 10      → "OPTIMISM" - chainId 43114   → "AVALANCHE" - chainId 59144   → "LINEA"
+
+            '
+        token:
+          type: string
+          enum:
+          - USDC
+          - MUSD
+          - USDT
+          - RLUSD
+          description: Token symbol to configure (must be uppercase)
+        walletAddress:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+          description: User's Ethereum wallet address (must be checksummed per EIP-55)
+        amount:
+          type: string
+          description: Amount in token's smallest unit (minimum 0.1 to cover gas fees)
+          example: '1000000'
+        validAfter:
+          type: string
+          description: Unix timestamp after which signature is valid (required for signature based approvals)
+          example: '1700000000'
+        validBefore:
+          type: string
+          description: Unix timestamp before which signature is valid (required for signature based approvals, max 1 min in future, > validAfter)
+          example: '1700000100'
+        nonce:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{64}$
+          description: Unique nonce for signature (required for signature based approvals)
+        signature:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{130}$
+          description: EIP-712 signature for authorization (required for signature based approvals)
+        tokenName:
+          type: string
+          description: Token name for EIP-712 domain (required for signature based approvals)
+          example: USD Coin
+        tokenVersion:
+          type: string
+          description: Token version for EIP-712 domain (required for signature based approvals)
+          example: '2'
+  examples:
+    PartialSignatureFields:
+      summary: Partial signature fields provided
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: ILLEGAL_ARGUMENT
+        message: 'Illegal argument: Either provide all or none of the signature-related fields: validAfter, validBefore, nonce, signature, tokenName, tokenVersion'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    DepositInvalidSignature:
+      summary: Invalid deposit signature
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_SIGNATURE
+        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Deposit signature must be 132 characters long and start with ''0x'''
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ChainBlank:
+      summary: Chain blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: CHAIN_BLANK
+        message: Chain cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    SignatureNotAllowed:
+      summary: Token not supported for signature-based deposits
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: TOKEN_NOT_SUPPORTED_FOR_SIGNATURE_BASED_DEPOSIT
+        message: 'Token ''USDT'' is not supported for signature-based deposits. Supported tokens: USDC, MUSD'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressCheckSum:
+      summary: Invalid address checksum
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_CHECKSUM
+        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidTokenNameOrVersion:
+      summary: Invalid token name or version for EIP-712
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TOKEN_NAME_OR_VERSION
+        message: 'Invalid token name or version for EIP-712 domain: Expected name: ''USD Coin'', version: ''2''. Provided name: ''USDC'', version: ''1''.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    DepositsPaused:
+      summary: Deposits temporarily paused (maintenance)
+      value:
+        code: SERVICE_UNAVAILABLE
+        internalCode: DEPOSITS_PAUSED
+        message: Deposits are temporarily paused
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressFormat:
+      summary: Invalid address format
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_FORMAT
+        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    MissingTrackingId:
+      summary: Missing tracking ID
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_TRACKING_ID
+        message: Tracking ID cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidTimestampAfterMustBeInPastOrNow:
+      summary: Invalid timestamp after must be in past or now
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TIMESTAMPS
+        message: 'Invalid timestamps: validAfter must be in the past or now'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      summary: No authorization header
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: NO_AUTH_INFO
+        message: No authentication information provided
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WalletAddressBlank:
+      summary: Wallet address blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_ADDRESS
+        message: Wallet address cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    TokenNotSupported:
+      summary: Token not supported
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: TOKEN_NOT_SUPPORTED
+        message: 'Token ''RLUSD'' is not supported. Supported tokens: USDC, MUSD, USDT'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidTrackingId:
+      summary: Invalid tracking ID
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TRACKING_ID
+        message: 'Invalid tracking ID format: ''$trackingId'''
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InsufficientBalance:
+      summary: Insufficient wallet balance
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INSUFFICIENT_BALANCE
+        message: Insufficient balance. Available balance is 500000 raw units, but request required amount is 1000000 raw units.
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    TrackingIdNotFound:
+      summary: Tracking ID not found
+      value:
+        code: NOT_FOUND_ERROR
+        internalCode: RESOURCE_NOT_FOUND
+        message: deposits/{trackingId} with identifier '0x1234...abcdef01' not found
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    TokenNotSupportedOnChain:
+      summary: Token not supported on chain
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: TOKEN_NOT_SUPPORTED_ON_CHAIN
+        message: 'Token ''RLUSD'' is not supported on chain ''linea''. Supported tokens: USDC, MUSD, USDT'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    AmountTooLow:
+      summary: Amount too low for deposit
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: AMOUNT_TOO_LOW
+        message: Amount is too low. Minimum required amount is 100000 raw units for operation 'DEPOSIT' on chain 'linea'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidTimestampBeforeGreaterThanAfter:
+      summary: Invalid timestamp before greater than after
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TIMESTAMPS
+        message: 'Invalid timestamps: validBefore must be greater than validAfter'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidTimestampBeforeMustBeInFuture:
+      summary: Invalid timestamp before must be future
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TIMESTAMPS
+        message: 'Invalid timestamps: validBefore must be in the future'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ChainNotSupported:
+      summary: Chain not supported
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: CHAIN_NOT_SUPPORTED
+        message: 'Chain ''STX'' is not supported. Supported chains: eth, base, polygon, arbitrum, optimism, avax, linea'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidTimestampBeforeMustBeAtMostOneMinuteInFuture:
+      summary: Invalid timestamp before too far
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TIMESTAMPS
+        message: 'Invalid timestamps: validBefore must be at most 1 minute in the future'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InsufficientApproval:
+      summary: Token approval does not match the required amount
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: APPROVAL_VALIDATION_ERROR
+        message: 'Approval validation error: Token approval amount 0 does not match required amount 1000000'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+  responses:
+    Forbidden:
+      description: User is not authorized to perform this action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            forbiddenGeneric:
+              summary: Forbidden - not authorized
+              value:
+                code: FORBIDDEN
+                internalCode: FORBIDDEN_GENERIC
+                message: User is not authorized to perform this action
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            Internal Error:
+              value:
+                code: INTERNAL_ERROR
+                internalCode: INTERNAL_ERROR
+                message: An unexpected error occurred while processing your request
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      description: No authorization header provided
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            unauthorizedNoHeader:
+              $ref: '#/components/examples/UnauthorizedNoHeader'
+    RateLimitExceeded:
+      description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
+
+
+        Response headers (when throttled):
+
+        - `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).
+
+        - `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).
+
+        - `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).
+
+        - `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.
+
+
+        `internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).
+
+        '
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying this endpoint.
+          schema:
+            type: integer
+            example: 3
+        X-RateLimit-Limit:
+          description: Maximum number of requests allowed in the current window for this endpoint.
+          schema:
+            type: integer
+            example: 1
+        X-RateLimit-Remaining:
+          description: Remaining requests in the current window.
+          schema:
+            type: integer
+            example: 0
+        X-RateLimit-Reset:
+          description: Unix timestamp (seconds) when the current limit window resets.
+          schema:
+            type: integer
+            format: int64
+            example: 1713264123
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            rateLimitExceededPerIp:
+              summary: Rate limit exceeded (per client IP)
+              value:
+                code: RATE_LIMIT_EXCEEDED
+                internalCode: THROTTLE_PER_IP
+                message: Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: 3
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key required for all endpoints.
+    JwtAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'JWT issued by POST /v1/auth/verify. Pass as Authorization: Bearer <token>.
+
+
+        x-agent-hint: agentcash and other agentic wallets strip the Authorization header for their own SIWX flow. Use X-MetaLend-JWT: Bearer <token> instead — the backend accepts both headers. Affected endpoints: POST /v1/deposits, POST /v1/withdrawals, PUT /v1/config.
+
+        '
+    OriginHeader:
+      type: apiKey
+      in: header
+      name: Origin
+      description: 'Required for CORS requests from browsers. Must match the allowed origins configured for the API key. Example: Origin: https://app.metalend.tech. Localhost is always allowed but must be specified.
+
+        '
+externalDocs:
+  description: Litepaper
+  url: https://metalend-inc.gitbook.io/litepaper

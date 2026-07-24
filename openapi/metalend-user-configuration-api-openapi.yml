@@ -1,0 +1,898 @@
+openapi: 3.0.3
+info:
+  title: MetaLend Rebalancing AI Agent Guide User Configuration API
+  version: 0.1.0
+  description: "API for managing cross-protocol cross-chain DeFi rebalancing operations exposing: <ul>\n  <li><b>Auth</b> – challenge/verify flow for JWT issuance.</li>\n  <li><b>Project settings</b> – fetch current project settings.</li>\n  <li><b>User configuration</b> – register or update token-level user-rebalancer settings and fetch current wallet configs.</li>\n  <li><b>Deposits</b> – create deposit intents, receive tracking IDs, and poll status through PROCESSING -> BRIDGING (cross-chain only) -> SUCCESS/FAILED/EMERGENCY_WITHDRAW. New deposits may return <b>503</b> with <b>DEPOSITS_PAUSED</b> during maintenance.</li>\n  <li><b>Withdrawals</b> – submit signed withdrawal requests, receive tracking IDs, and monitor status PROCESSING -> SUCCESS/FAILED.</li>\n  <li><b>Balances</b> – query wallet-level balances and withdraw details, as well as balances in bridge progress.</li>\n  <li><b>Rewards</b> – aggregated rewards and claim details per wallet.</li>\n  <li><b>Pools</b> – list supported protocols (Aave, Morpho, Euler, etc.), their pools, APY breakdowns, and TVL snapshots.</li>\n  <li><b>Transaction Costs</b> – current deposit/withdraw on-behalf transaction fees and minimum amounts by chain.</li>\n  <li><b>AI Agent Guide</b> – Markdown flow guide at <code>/SKILL.md</code> with signing formats, wizard requirements, and known integration gotchas.</li>\n</ul> All endpoints require an <b>X-API-Key</b>. <b>JWT authentication</b> is required on <b>deposit, withdrawal, and config update</b> operations.\n<b>Obtain API key by <a href=\"https://developer.metalend.tech/\" target=\"_blank\" rel=\"noopener noreferrer\">creating a new project</a>.</b>\nAll requests must include the Origin header. Use Origin: https://app.metalend.tech unless you have been assigned a different allowed origin."
+  contact:
+    name: MetaLend API Support
+    email: support@metalend.tech
+  termsOfService: https://metalend-inc.gitbook.io/litepaper/terms-of-service
+  x-guidance: AI agents MUST read https://api.metalend.tech/SKILL.md before implementing any MetaLend operation. It contains critical signing formats, required headers, wizard flows for config setup, and known failure modes.
+  x-default-api-key: a7f2b8c4d9e1f3a6b5c8d2e7f1a4b9c3d6e8f2a5b7c1d4e9f3a6b8c2d5e7f1a4
+  x-api-key-guidance: Use x-default-api-key as X-API-Key for agent testing/integration. If you are the project owner, create or use your own project API key from https://developer.metalend.tech instead.
+servers:
+- url: https://api.metalend.tech
+  description: Production server
+security:
+- ApiKeyAuth: []
+  OriginHeader: []
+tags:
+- name: User Configuration
+  description: User rebalancer configuration management
+paths:
+  /v1/config:
+    put:
+      summary: Update rebalancer configuration
+      description: "Creates or updates the rebalancing configuration for a specific wallet address and token. This endpoint allows users to set custom protocols and pools for automated rebalancing of their funds.\n\n**Authentication**: Requires a valid JWT token. The wallet address in the JWT must match the `walletAddress` field in the request body.\n\n**Configuration per Token**: Each request configures one specific token (USDC, MUSD, or USDT, RLUSD). To configure multiple tokens, make separate PUT requests for each token. After successfully setting a configuration for a token, the `hasSignedConfig` flag for that token will become `true` when retrieved via GET `/v1/config/{walletAddress}`.\n\n**Configuration Structure**: The configuration specifies arrays of domain IDs, protocol IDs, and pool contract addresses. All three arrays must have the same length, with each index representing one pool configuration:\n- `domainIds[0]`, `protocolIds[0]`, `poolAddresses[0]` = first pool\n- `domainIds[1]`, `protocolIds[1]`, `poolAddresses[1]` = second pool\n- And so on...\n\n**Domain IDs**: \n- `11` = LINEA\n- `6` = BASE\n- `7` = POLYGON\n- `3` = ARBITRUM\n- `1` = AVALANCHE\n- `2` = OPTIMISM\n- `0` = ETHEREUM\n\n**Protocol IDs**: Maps to supported protocols:\n- `0` = Aave\n- `1` = Morpho\n- `2` = Euler\n\n**Collateral Exposure**: Collateral exposure symbols for the pools in the configuration, must be taken from the pool catalog from GET /v1/pools, unique and not empty. If you want to disable the filter, pass null.\nexample: [\"WETH\", \"cbBTC\", \"wstETH\"]\n\nTvl and liquidity multiplier are optional and can be used to filter the pools in the configuration.\nExample:\n- requiredTvl: 5000000\n- requiredLiquidityMultiplier: 10\nThis will filter the pools in the configuration to only include pools that have a TVL of at least $5M and a liquidity multiplier of at least 10.\nExample:\n- requiredTvl: 0\n- requiredLiquidityMultiplier: 0\nThis will disable the filter and include all pools in the configuration.\nDuring deposits, pools that do not comply with filters (exposure, liquidity, tvl) are ignored. Active balances are also monitored periodically and if a pool with a deposit no longer complies with the filters, rebalance immediately happens outside to first available pool with highest APY %\n\n**Pool Contracts**: Each pool contract address must be a valid checksummed Ethereum address (EIP-55) corresponding to a pool on the specified protocol. Pool addresses can be obtained from the `/v1/pools` endpoint.\n\n**Signature Requirement**: The `signature` field must be created using the following steps:\n\n1. ABI-encode the following parameters in order:\n  - `address` — `rebalancingManagerAddress` (from `GET /v1/config/{walletAddress}`)\n  - `uint8[]` — `protocolIds` array\n  - `address[]` — `poolAddresses` array\n  - `uint32[]` — `domainIds` array\n  - `uint256` — `spendingCapRaw` (use `\"0\"` if not set, can be set only for USDC, when setting this value, AAVE protocol on LINEA must be included in the configuration with a non-zero spending cap, otherwise the request will be rejected)\n\n2. Compute `keccak256` of the ABI-encoded bytes.\n\n3. Sign the resulting hash using `personal_sign` (i.e. `eth_sign` with the standard Ethereum prefix `\\x19Ethereum Signed Message:\\n32`). In viem this is `walletClient.signMessage({ account, message: { raw: hash } })`.\n\nThe signature must be 132 characters long (0x + 130 hex characters) and must be signed by the wallet address in the `walletAddress` field.\n\n**Smart Contract Wallets / ERC-6492**: For contract wallet signatures, the backend validates the configuration signature on every chain contained within the `domainIds`. If the signature is rejected on any of those chains, the entire configuration is rejected. The error response will indicate which domain IDs were rejected: `\"Contract wallets configs can only contain chains verified by supported signature. Found rejected domain IDs: <rejectedIds>\"`.\n\n**Include Rewards APY**: The optional `includeRewardsApy` boolean flag (default: `true`) determines whether reward APYs should be included in APY calculations during rebalancing decisions.\n\n**Response**: Returns `201 Created` if this is the first configuration for the wallet, or `200 OK` if updating an existing configuration. The response includes the deployed rebalancer contract address and the list of configured tokens.\n\n**Rate limiting**: 1 request per 6 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n"
+      operationId: updateConfig
+      tags:
+      - User Configuration
+      security:
+      - ApiKeyAuth: []
+        JwtAuth: []
+        OriginHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrUpdateConfigRequest'
+            example:
+              walletAddress: '0x1234567890123456789012345678901234567890'
+              token: USDC
+              domainIds:
+              - 11
+              - 11
+              - 11
+              protocolIds:
+              - 0
+              - 1
+              - 2
+              poolAddresses:
+              - '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+              - '0x1111111111111111111111111111111111111111'
+              - '0x2222222222222222222222222222222222222222'
+              signature: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01'
+              includeRewardsApy: true
+              requiredTvl: 5000000
+              requiredLiquidityMultiplier: 10
+              collateralExposure:
+              - WETH
+              - cbBTC
+              - wstETH
+              spendingCapRaw: '0'
+      responses:
+        '200':
+          description: Configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrUpdateConfigResponse'
+              example:
+                walletAddress: '0x1234567890123456789012345678901234567890'
+                rebalancerAddress: '0x1234567890123456789012345678901234567890'
+                configuredToken: USDC
+                operation: UPDATED
+        '201':
+          description: Configuration created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrUpdateConfigResponse'
+              example:
+                walletAddress: '0x1234567890123456789012345678901234567890'
+                rebalancerAddress: '0x1234567890123456789012345678901234567890'
+                configuredToken: USDC
+                operation: CREATED
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                walletAddressBlank:
+                  $ref: '#/components/examples/WalletAddressBlank'
+                invalidAddressFormat:
+                  $ref: '#/components/examples/InvalidAddressFormat'
+                invalidAddressCheckSum:
+                  $ref: '#/components/examples/InvalidAddressCheckSum'
+                tokenNotSupported:
+                  $ref: '#/components/examples/TokenNotSupported'
+                configProtocolsPoolsAndDomains:
+                  $ref: '#/components/examples/ConfigProtocolsPoolsAndDomains'
+                configValidationFailed:
+                  $ref: '#/components/examples/ConfigValidationFailed'
+                configInvalidSignature:
+                  $ref: '#/components/examples/ConfigInvalidSignature'
+        '401':
+          $ref: '#/components/responses/UnauthorizedNoHeader'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Conflict - config update not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                updateConfigRejectedBridgeInProgress:
+                  $ref: '#/components/examples/UpdateConfigRejectedBridgeInProgress'
+                updateConfigRejectedRefillInProgress:
+                  $ref: '#/components/examples/UpdateConfigRejectedRefillInProgress'
+                updateConfigRejectedPoolWithBalance:
+                  $ref: '#/components/examples/UpdateConfigRejectedPoolWithBalance'
+                invalidCollateralExposureUnknownSymbols:
+                  $ref: '#/components/examples/InvalidCollateralExposureUnknownSymbols'
+                invalidCollateralExposureEmptyList:
+                  $ref: '#/components/examples/InvalidCollateralExposureEmptyList'
+                invalidCollateralExposureMaxSize:
+                  $ref: '#/components/examples/InvalidCollateralExposureMaxSize'
+                invalidCollateralExposureBlankEntry:
+                  $ref: '#/components/examples/InvalidCollateralExposureBlankEntry'
+                invalidCollateralExposureDuplicates:
+                  $ref: '#/components/examples/InvalidCollateralExposureDuplicates'
+                invalidCollateralExposureRequiresAave:
+                  $ref: '#/components/examples/InvalidCollateralExposureRequiresAave'
+                invalidCollateralExposureRequiredTvlNotMet:
+                  $ref: '#/components/examples/InvalidCollateralExposureRequiredTvlNotMet'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-agentcash-auth:
+        mode: free
+  /v1/config/{walletAddress}:
+    get:
+      summary: Get rebalancer configuration
+      description: "Retrieves the current rebalancing configuration state for a specific wallet address across all supported tokens.\n\nThis endpoint returns configurations for each supported token, including:\n- **Rebalancer Address**: The smart contract address of the user's rebalancer\n- **Rebalancing Manager Address**: The address of the rebalancing manager contract\n- **Configurations**: List of configuration items, one per supported token, each containing:\n  - Token information\n  - Domain IDs, Protocol IDs, and Pool contracts\n  - **hasSignedConfig**: Boolean flag indicating the configuration state for this specific token\n\n**Understanding hasSignedConfig (per token):**\n- `true`: The user has signed and set their own custom configuration for this token\n- `false`: The user has not signed any configuration for this token yet, and the returned values represent the default configuration\n\nWhen `hasSignedConfig` is false for a token, the configuration data shows what the default state allows, but it hasn't been actively set by the user for that token. This state must be signed by user to confirm the configuration. Each token can have a different `hasSignedConfig` status.\n\n**Note:** Requires a valid API key to query configurations.\n\n**Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n"
+      operationId: getConfig
+      tags:
+      - User Configuration
+      parameters:
+      - name: walletAddress
+        in: path
+        required: true
+        description: Ethereum wallet address
+        schema:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+        example: '0x1234567890123456789012345678901234567890'
+      responses:
+        '200':
+          description: Configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetConfigResponse'
+              example:
+                walletAddress: '0x1234567890123456789012345678901234567890'
+                rebalancerAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+                rebalancingManagerAddress: '0x971ad06e6fde83b0265bd3ced5f5eaf30e269962'
+                rebalancerExists: true
+                configurations:
+                - token: USDC
+                  domainIds:
+                  - 11
+                  protocolIds:
+                  - 0
+                  poolAddresses:
+                  - '0xc47b8c00b0f69a36fa203ffeac0334874574a8ac'
+                  includeRewardsApy: true
+                  lastRebalanceTimestamp: '2025-01-15T10:30:00Z'
+                  rebalanceFrequency: 7
+                  totalGasFee: '0.00'
+                  totalDeposits: '0.00'
+                  totalWithdrawals: '0.00'
+                  requiredTvl: '0'
+                  requiredLiquidityMultiplier: '0'
+                  spendingCapRaw: null
+                  spendingCapFormatted: null
+                  hasSignedConfig: true
+                - token: MUSD
+                  domainIds:
+                  - 11
+                  protocolIds:
+                  - 2
+                  poolAddresses:
+                  - '0xa7ada0d422a8b5fa4a7947f2cb0ee2d32435647d'
+                  includeRewardsApy: true
+                  lastRebalanceTimestamp: null
+                  rebalanceFrequency: 7
+                  totalGasFee: '0.00'
+                  totalDeposits: '0.00'
+                  totalWithdrawals: '0.00'
+                  requiredTvl: '0'
+                  requiredLiquidityMultiplier: '0'
+                  spendingCapRaw: null
+                  spendingCapFormatted: null
+                  hasSignedConfig: false
+                - token: USDT
+                  domainIds:
+                  - 11
+                  - 11
+                  protocolIds:
+                  - 0
+                  - 2
+                  poolAddresses:
+                  - '0xc47b8c00b0f69a36fa203ffeac0334874574a8ac'
+                  - '0xcbef9be95738290188b25ca9a6dd2bec417a578c'
+                  includeRewardsApy: true
+                  lastRebalanceTimestamp: null
+                  rebalanceFrequency: 7
+                  totalGasFee: '0.00'
+                  totalDeposits: '0.00'
+                  totalWithdrawals: '0.00'
+                  requiredTvl: '0'
+                  requiredLiquidityMultiplier: '0'
+                  collateralExposure:
+                  - cbBTC
+                  - WETH
+                  spendingCapRaw: null
+                  spendingCapFormatted: null
+                  hasSignedConfig: false
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                walletAddressBlank:
+                  $ref: '#/components/examples/WalletAddressBlank'
+                invalidAddressFormat:
+                  $ref: '#/components/examples/InvalidAddressFormat'
+                invalidAddressCheckSum:
+                  $ref: '#/components/examples/InvalidAddressCheckSum'
+        '401':
+          $ref: '#/components/responses/UnauthorizedNoHeader'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-agentcash-auth:
+        mode: free
+  /v1/config/default/{token}:
+    get:
+      summary: Get default configuration for token
+      description: 'Retrieves the default pool configuration state for a specific token including domain IDs, protocol IDs, and pool contract addresses.
+
+
+        This endpoint returns the initial default configuration that shows how the system is set up for the specified token. The configuration includes:
+
+        - **Domain IDs**: Cross-chain domain identifiers for the token
+
+        - **Protocol IDs**: Identifiers of the supported DeFi protocols (e.g., Aave, Morpho, Euler)
+
+        - **Pool Contracts**: Smart contract addresses for the respective pools
+
+        - **Rebalancing Manager Address**: The address of the rebalancing manager contract
+
+
+        This represents the default state of the configuration, which can be used as a reference or starting point for rebalancing operations. Use this to compare against user''s existing configuration.
+
+
+        **Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).
+
+        '
+      operationId: getDefaultConfig
+      tags:
+      - User Configuration
+      parameters:
+      - name: token
+        in: path
+        required: true
+        description: Token symbol (uppercase)
+        schema:
+          type: string
+          enum:
+          - USDC
+          - MUSD
+          - USDT
+          - RLUSD
+        example: USDC
+      responses:
+        '200':
+          description: Default configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDefaultConfigResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                tokenNotSupported:
+                  $ref: '#/components/examples/TokenNotSupported'
+        '401':
+          $ref: '#/components/responses/UnauthorizedNoHeader'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-agentcash-auth:
+        mode: free
+components:
+  examples:
+    InvalidCollateralExposureDuplicates:
+      summary: Duplicate symbols in collateralExposure list
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Collateral exposure list contains duplicate entries.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureRequiredTvlNotMet:
+      summary: No configured Aave pool meets required minimum TVL
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Collateral exposure is enabled: at least one configured Aave pool must meet your required minimum TVL (5000000 USD). None qualify. LINEA: Aave market TVL 1000000 USD is below required minimum TVL 5000000 USD'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UpdateConfigRejectedBridgeInProgress:
+      summary: Config update rejected - bridge in progress (USDC)
+      value:
+        code: CONFLICT_ERROR
+        internalCode: UPDATE_CONFIG_REJECTED
+        message: 'Config upsert rejected: Bridge in progress for USDC'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UpdateConfigRejectedPoolWithBalance:
+      summary: Config update rejected - cannot remove pool with balance
+      value:
+        code: CONFLICT_ERROR
+        internalCode: UPDATE_CONFIG_REJECTED
+        message: 'Config upsert rejected: Cannot disable pool with balance'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ConfigInvalidSignature:
+      summary: Invalid config signature
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_SIGNATURE
+        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Config signature verification failed'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressCheckSum:
+      summary: Invalid address checksum
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_CHECKSUM
+        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureBlankEntry:
+      summary: Blank string in collateralExposure list
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Entry at index 0 cannot be blank.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressFormat:
+      summary: Invalid address format
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_FORMAT
+        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UpdateConfigRejectedRefillInProgress:
+      summary: Config update rejected - refill in progress (USDC)
+      value:
+        code: CONFLICT_ERROR
+        internalCode: UPDATE_CONFIG_REJECTED
+        message: 'Config upsert rejected: Refill in progress for USDC'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      summary: No authorization header
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: NO_AUTH_INFO
+        message: No authentication information provided
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WalletAddressBlank:
+      summary: Wallet address blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_ADDRESS
+        message: Wallet address cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    TokenNotSupported:
+      summary: Token not supported
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: TOKEN_NOT_SUPPORTED
+        message: 'Token ''RLUSD'' is not supported. Supported tokens: USDC, MUSD, USDT'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureRequiresAave:
+      summary: collateralExposure set but no Aave pool in configuration
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Collateral exposure is enabled: at least one Aave pool (protocol 0) is required. Set collateralExposure to null to save a configuration without Aave.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureUnknownSymbols:
+      summary: Unknown collateral symbols (not tracked in vault exposure)
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Unknown collateral symbol(s) not present in tracked vault exposure: FOO, XYZ'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ConfigProtocolsPoolsAndDomains:
+      summary: Invalid configuration arrays (covers length mismatch, empty arrays, unsupported pools, and contract wallet rejected domain IDs)
+      description: 'Returned for any of the following validation failures:
+
+        - Array lengths of domainIds, protocolIds, and poolAddresses do not match
+
+        - Any array is empty (at least 1 element required in each)
+
+        - One or more pool addresses are not supported
+
+        - Contract wallet signature was rejected on one or more chains in domainIds: "Contract wallets configs can only contain chains verified by supported signature. Found rejected domain IDs: $unsupportedDomainIds"
+
+        '
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_PROTOCOLS_POOLS_AND_DOMAINS
+        message: 'Invalid configuration arrays: Domain IDs, protocol IDs, and pool contracts arrays must have the same length'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureMaxSize:
+      summary: collateralExposure list exceeds maximum length
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Collateral exposure list exceeds maximum allowed size of 200 entries.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ConfigValidationFailed:
+      summary: Config validation failed
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_SIGNATURE
+        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Config signature is blank'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureEmptyList:
+      summary: Empty collateralExposure array (use null to disable filter)
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Collateral exposure list cannot be empty. Use null to disable the filter.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+  schemas:
+    CreateOrUpdateConfigResponse:
+      type: object
+      required:
+      - walletAddress
+      - rebalancerAddress
+      - configuredToken
+      - operation
+      properties:
+        walletAddress:
+          type: string
+          description: User's wallet address
+          example: '0x1234567890123456789012345678901234567890'
+        rebalancerAddress:
+          type: string
+          description: Deployed rebalancer contract address
+          example: '0x1234567890123456789012345678901234567890'
+        configuredToken:
+          type: string
+          description: Configured token symbol
+          example: USDC
+        operation:
+          type: string
+          enum:
+          - CREATED
+          - UPDATED
+          description: Operation performed
+          example: CREATED
+    GetConfigResponse:
+      type: object
+      required:
+      - walletAddress
+      - rebalancerAddress
+      - rebalancingManagerAddress
+      - rebalancerExists
+      - configurations
+      properties:
+        walletAddress:
+          type: string
+          description: User's wallet address
+          example: '0x1234567890123456789012345678901234567890'
+        rebalancerAddress:
+          type: string
+          description: Deployed rebalancer contract address
+          example: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+        rebalancingManagerAddress:
+          type: string
+          description: RebalancingManager contract address
+          example: '0x971ad06e6fde83b0265bd3ced5f5eaf30e269962'
+        rebalancerExists:
+          type: boolean
+          description: Whether a rebalancer contract has been deployed for this wallet
+          example: true
+        configurations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Configuration'
+    Configuration:
+      type: object
+      required:
+      - token
+      - domainIds
+      - protocolIds
+      - poolAddresses
+      - includeRewardsApy
+      - totalGasFee
+      - rebalanceFrequency
+      - hasSignedConfig
+      - totalDeposits
+      - totalWithdrawals
+      - requiredTvl
+      - requiredLiquidityMultiplier
+      properties:
+        token:
+          type: string
+          description: Token symbol
+          example: USDC
+        domainIds:
+          type: array
+          example:
+          - 11
+          - 11
+          items:
+            type: integer
+          description: Domain IDs for configuration - match index values of protocolIds and poolAddresses
+        protocolIds:
+          type: array
+          example:
+          - 0
+          - 2
+          items:
+            type: integer
+          description: Protocol IDs (0=Aave, 1=Morpho, 2=Euler) - match index values of domainIds and poolAddresses
+        poolAddresses:
+          type: array
+          example:
+          - 0xghijklghijklghijklghijklghijklghijklmnop
+          - 0xqrstuvqrstuvqrstuvqrstuvqrstuvqrstuvwxy
+          items:
+            type: string
+          description: Pool contract addresses - match index values of domainIds and protocolIds
+        includeRewardsApy:
+          type: boolean
+          description: Whether rewards are included in APY
+        totalGasFee:
+          type: string
+          example: '0.00'
+          description: Total gas fees accumulated
+        totalDeposits:
+          type: string
+          description: Total deposits
+        totalWithdrawals:
+          type: string
+          description: Total withdrawals
+        lastRebalanceTimestamp:
+          type: string
+          nullable: true
+          example: '2025-01-01T00:00:00Z'
+          description: Last rebalance timestamp
+        rebalanceFrequency:
+          type: integer
+          example: 7
+          description: Rebalance frequency in days
+        requiredTvl:
+          type: string
+          description: '*(Recommended)* Minimum TVL (in USD) a pool must have before the rebalancer will route funds into it. It is recommended to set this to avoid routing funds into low-liquidity pools. Pass `"0"` only to explicitly disable this filter. Example: `"5000000"` = $5M minimum TVL.
+
+            '
+        requiredLiquidityMultiplier:
+          type: string
+          description: '*(Recommended)* Minimum ratio of pool liquidity to the user''s position size. It is recommended to set this as a safety guard against thin markets. Pass `"0"` only to explicitly disable this filter. Example: `"10"` = pool must hold at least 10× the user''s position in available liquidity.
+
+            '
+        spendingCapRaw:
+          type: string
+          nullable: true
+          description: Spending cap in raw units
+        spendingCapFormatted:
+          type: string
+          nullable: true
+          description: Spending cap formatted
+        hasSignedConfig:
+          type: boolean
+          example: true
+          description: 'Indicates whether the user has signed a custom configuration for this specific token on this rebalancer.
+
+            - true: User has signed and set custom configuration
+
+            - false: Using default configuration values (not signed by user)
+
+            '
+    GetDefaultConfigResponse:
+      type: object
+      required:
+      - token
+      - rebalancingManagerAddress
+      - domainIds
+      - protocolIds
+      - poolAddresses
+      properties:
+        token:
+          type: string
+          description: Token symbol
+          example: USDT
+        rebalancingManagerAddress:
+          type: string
+          description: RebalancingManager contract address
+          example: '0x971ad06e6fde83b0265bd3ced5f5eaf30e269962'
+        domainIds:
+          type: array
+          items:
+            type: integer
+          description: Default domain IDs - match index values of protocolIds and poolAddresses
+          example:
+          - 11
+          - 11
+        protocolIds:
+          type: array
+          items:
+            type: integer
+          description: Default protocol IDs - match index values of domainIds and poolAddresses
+          example:
+          - 0
+          - 2
+        poolAddresses:
+          type: array
+          items:
+            type: string
+          description: Default pool contract addresses - match index values of domainIds and protocolIds
+          example:
+          - '0xc47b8c00b0f69a36fa203ffeac0334874574a8ac'
+          - '0xcbef9be95738290188b25ca9a6dd2bec417a578c'
+    ApiError:
+      type: object
+      required:
+      - code
+      - internalCode
+      - message
+      properties:
+        code:
+          type: string
+          description: Error category identifier
+        internalCode:
+          type: string
+          description: More specific error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracking
+        retryAfterSeconds:
+          type: integer
+          description: Seconds to wait before retrying (for rate limiting)
+    CreateOrUpdateConfigRequest:
+      type: object
+      required:
+      - walletAddress
+      - token
+      - domainIds
+      - protocolIds
+      - poolAddresses
+      - signature
+      properties:
+        walletAddress:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+          description: User's Ethereum wallet address (must be checksummed per EIP-55)
+        token:
+          type: string
+          enum:
+          - USDC
+          - MUSD
+          - USDT
+          - RLUSD
+          description: Token symbol to configure (must be uppercase)
+        domainIds:
+          type: array
+          items:
+            type: integer
+          description: 'Domain IDs - must match length and index values must be relevant to protocolIds and poolAddresses.
+
+            '
+          example:
+          - 11
+          - 11
+          - 11
+        protocolIds:
+          type: array
+          items:
+            type: integer
+            enum:
+            - 0
+            - 1
+            - 2
+          description: Protocol IDs (0=Aave, 1=Morpho, 2=Euler) - must match length and index values must be relevant to domainIds and poolAddresses
+          example:
+          - 0
+          - 1
+          - 2
+        poolAddresses:
+          type: array
+          items:
+            type: string
+            pattern: ^0x[a-fA-F0-9]{40}$
+          description: Pool contract addresses (must be checksummed per EIP-55) - must match length and index values must be relevant to domainIds and protocolIds Each pool address must be unique within this configuration. The same pool cannot be included more than once.
+        signature:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{130}$
+          description: User signature for configuration
+        includeRewardsApy:
+          type: boolean
+          default: true
+          description: Include rewards in APY calculations
+        requiredTvl:
+          type: number
+          default: 0
+          description: '*(Recommended)* Minimum TVL (in USD) a pool must have before the rebalancer will route funds into it. It is recommended to set this to avoid routing funds into low-liquidity pools. Pass `0` only to explicitly disable this filter. Example: `5000000` = $5M minimum TVL.
+
+            '
+        requiredLiquidityMultiplier:
+          type: number
+          default: 0
+          description: '*(Recommended)* Minimum ratio of pool liquidity to the user''s position size. It is recommended to set this as a safety guard against thin markets. Pass `0` only to explicitly disable this filter. Example: `10` = pool must hold at least 10× the user''s position in available liquidity.
+
+            '
+        spendingCapRaw:
+          type: string
+          default: '0'
+          description: '*(Optional)* Maximum amount in raw token units (unformatted integer) the rebalancer is allowed to move in a single transaction. Pass `"0"` for no cap. Example for USDC (6 decimals): `"1000000000"` = $1,000 cap.
+
+            '
+        collateralExposure:
+          type: array
+          nullable: true
+          default: null
+          items:
+            type: string
+          description: 'Collateral exposure symbols for the pools in the configuration, must be taken from the pool catalog from GET /v1/pools, unique and not empty. If you want to disable the filter, pass null.
+
+            '
+          example:
+          - WETH
+          - cbBTC
+          - wstETH
+  responses:
+    Forbidden:
+      description: User is not authorized to perform this action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            forbiddenGeneric:
+              summary: Forbidden - not authorized
+              value:
+                code: FORBIDDEN
+                internalCode: FORBIDDEN_GENERIC
+                message: User is not authorized to perform this action
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            Internal Error:
+              value:
+                code: INTERNAL_ERROR
+                internalCode: INTERNAL_ERROR
+                message: An unexpected error occurred while processing your request
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      description: No authorization header provided
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            unauthorizedNoHeader:
+              $ref: '#/components/examples/UnauthorizedNoHeader'
+    RateLimitExceeded:
+      description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
+
+
+        Response headers (when throttled):
+
+        - `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).
+
+        - `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).
+
+        - `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).
+
+        - `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.
+
+
+        `internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).
+
+        '
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying this endpoint.
+          schema:
+            type: integer
+            example: 3
+        X-RateLimit-Limit:
+          description: Maximum number of requests allowed in the current window for this endpoint.
+          schema:
+            type: integer
+            example: 1
+        X-RateLimit-Remaining:
+          description: Remaining requests in the current window.
+          schema:
+            type: integer
+            example: 0
+        X-RateLimit-Reset:
+          description: Unix timestamp (seconds) when the current limit window resets.
+          schema:
+            type: integer
+            format: int64
+            example: 1713264123
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            rateLimitExceededPerIp:
+              summary: Rate limit exceeded (per client IP)
+              value:
+                code: RATE_LIMIT_EXCEEDED
+                internalCode: THROTTLE_PER_IP
+                message: Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: 3
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key required for all endpoints.
+    JwtAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'JWT issued by POST /v1/auth/verify. Pass as Authorization: Bearer <token>.
+
+
+        x-agent-hint: agentcash and other agentic wallets strip the Authorization header for their own SIWX flow. Use X-MetaLend-JWT: Bearer <token> instead — the backend accepts both headers. Affected endpoints: POST /v1/deposits, POST /v1/withdrawals, PUT /v1/config.
+
+        '
+    OriginHeader:
+      type: apiKey
+      in: header
+      name: Origin
+      description: 'Required for CORS requests from browsers. Must match the allowed origins configured for the API key. Example: Origin: https://app.metalend.tech. Localhost is always allowed but must be specified.
+
+        '
+externalDocs:
+  description: Litepaper
+  url: https://metalend-inc.gitbook.io/litepaper

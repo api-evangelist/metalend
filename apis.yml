@@ -1,9 +1,28 @@
 aid: metalend
 name: MetaLend
-description: 'MetaLend is a company surfaced as a portfolio company of pantera-capital and added to the
-  API Evangelist network as a stub for enrichment. Sector: crypto. This profile is a lead awaiting the
-  enrichment pipeline.'
+description: >-
+  MetaLend is a DeFi "earn and spend" platform that aggregates lending pools across
+  protocols (Aave, Morpho, Euler) and chains (Base, Ethereum, Polygon, Arbitrum, Linea)
+  behind a single cross-chain Rebalancing API. It continuously repositions user-approved,
+  self-custodied capital into the best-yielding pools while keeping funds instantly
+  spendable via a debit card. The API is notably agent-native: it serves an AI agent flow
+  guide at GET /SKILL.md, ships SIWE challenge/verify JWT auth with EIP-191/EIP-712/EIP-3009
+  wallet signing, and gates its services directory behind an x402 (HTTP 402) micropayment in
+  USDC on Base. Smart contracts are audited by Sherlock. Backed by Pantera Capital.
 url: https://raw.githubusercontent.com/api-evangelist/metalend/refs/heads/main/apis.yml
+accessModel:
+  pricing: unknown
+  onboarding: self-serve
+  trial: false
+  try_now: false
+  public: false
+  label: Self-serve signup
+  confidence: medium
+  source:
+  - authentication
+  generated: '2026-07-22'
+  method: derived
+image: https://d26nkljutfj8pz.cloudfront.net/images/metalend-share.png
 x-type: company
 x-source: vc-portfolio
 x-backed-by:
@@ -12,16 +31,263 @@ x-tier: stub
 x-tier-reason: portfolio-lead
 specificationVersion: '0.20'
 created: '2026-07-17'
-modified: '2026-07-17'
+modified: '2026-07-20'
 tags:
 - Company
 - Crypto
-apis: []
+- DeFi
+- Lending
+- Yield
+- Rebalancing
+- Web3
+- Stablecoins
+- Payments
+- Agent Native
+- Blockchain
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
+apis:
+- aid: metalend:metalend-ai-agent-guide-api
+  name: MetaLend AI Agent Guide API
+  description: >-
+    Machine-readable flow guide for AI agents — signing formats, wizard flows, and integration gotchas
+  humanURL: https://developer.metalend.tech
+  baseURL: https://api.metalend.tech
+  tags:
+  - AI Agent Guide
+  properties:
+  - type: OpenAPI
+    url: openapi/metalend-ai-agent-guide-api-openapi.yml
+  - type: Authentication
+    url: authentication/metalend-authentication.yml
+  - type: Documentation
+    url: https://metalend-inc.gitbook.io/litepaper
+  - type: APIReference
+    url: https://api.metalend.tech/openapi.json
+  - type: GettingStarted
+    url: https://api.metalend.tech/SKILL.md
+- aid: metalend:metalend-auth-api
+  name: MetaLend Auth API
+  description: Get challenge / verify challenge authentication
+  humanURL: https://developer.metalend.tech
+  baseURL: https://api.metalend.tech
+  tags:
+  - Auth
+  properties:
+  - type: OpenAPI
+    url: openapi/metalend-auth-api-openapi.yml
+  - type: Authentication
+    url: authentication/metalend-authentication.yml
+  - type: Documentation
+    url: https://metalend-inc.gitbook.io/litepaper
+  - type: APIReference
+    url: https://api.metalend.tech/openapi.json
+  - type: GettingStarted
+    url: https://api.metalend.tech/SKILL.md
+- aid: metalend:metalend-balances-api
+  name: MetaLend Balances API
+  description: Balance queries across pools and protocols
+  humanURL: https://developer.metalend.tech
+  baseURL: https://api.metalend.tech
+  tags:
+  - Balances
+  properties:
+  - type: OpenAPI
+    url: openapi/metalend-balances-api-openapi.yml
+  - type: Authentication
+    url: authentication/metalend-authentication.yml
+  - type: Documentation
+    url: https://metalend-inc.gitbook.io/litepaper
+  - type: APIReference
+    url: https://api.metalend.tech/openapi.json
+  - type: GettingStarted
+    url: https://api.metalend.tech/SKILL.md
+- aid: metalend:metalend-deposits-api
+  name: MetaLend Deposits API
+  description: Deposit operations for rebalancing
+  humanURL: https://developer.metalend.tech
+  baseURL: https://api.metalend.tech
+  tags:
+  - Deposits
+  properties:
+  - type: OpenAPI
+    url: openapi/metalend-deposits-api-openapi.yml
+  - type: Authentication
+    url: authentication/metalend-authentication.yml
+  - type: Documentation
+    url: https://metalend-inc.gitbook.io/litepaper
+  - type: APIReference
+    url: https://api.metalend.tech/openapi.json
+  - type: GettingStarted
+    url: https://api.metalend.tech/SKILL.md
+- aid: metalend:metalend-pools-api
+  name: MetaLend Pools API
+  description: Protocol and pool information
+  humanURL: https://developer.metalend.tech
+  baseURL: https://api.metalend.tech
+  tags:
+  - Pools
+  properties:
+  - type: OpenAPI
+    url: openapi/metalend-pools-api-openapi.yml
+  - type: Authentication
+    url: authentication/metalend-authentication.yml
+  - type: Documentation
+    url: https://metalend-inc.gitbook.io/litepaper
+  - type: APIReference
+    url: https://api.metalend.tech/openapi.json
+  - type: GettingStarted
+    url: https://api.metalend.tech/SKILL.md
+- aid: metalend:metalend-rewards-api
+  name: MetaLend Rewards API
+  description: Reward aggregation and claim data
+  humanURL: https://developer.metalend.tech
+  baseURL: https://api.metalend.tech
+  tags:
+  - Rewards
+  properties:
+  - type: OpenAPI
+    url: openapi/metalend-rewards-api-openapi.yml
+  - type: Authentication
+    url: authentication/metalend-authentication.yml
+  - type: Documentation
+    url: https://metalend-inc.gitbook.io/litepaper
+  - type: APIReference
+    url: https://api.metalend.tech/openapi.json
+  - type: GettingStarted
+    url: https://api.metalend.tech/SKILL.md
+- aid: metalend:metalend-services-api
+  name: MetaLend Services API
+  description: The Services API from MetaLend — 1 operation(s) for services.
+  humanURL: https://developer.metalend.tech
+  baseURL: https://api.metalend.tech
+  tags:
+  - Services
+  properties:
+  - type: OpenAPI
+    url: openapi/metalend-services-api-openapi.yml
+  - type: Authentication
+    url: authentication/metalend-authentication.yml
+  - type: Documentation
+    url: https://metalend-inc.gitbook.io/litepaper
+  - type: APIReference
+    url: https://api.metalend.tech/openapi.json
+  - type: GettingStarted
+    url: https://api.metalend.tech/SKILL.md
+- aid: metalend:metalend-transaction-costs-api
+  name: MetaLend Transaction Costs API
+  description: Transaction cost queries
+  humanURL: https://developer.metalend.tech
+  baseURL: https://api.metalend.tech
+  tags:
+  - Transaction Costs
+  properties:
+  - type: OpenAPI
+    url: openapi/metalend-transaction-costs-api-openapi.yml
+  - type: Authentication
+    url: authentication/metalend-authentication.yml
+  - type: Documentation
+    url: https://metalend-inc.gitbook.io/litepaper
+  - type: APIReference
+    url: https://api.metalend.tech/openapi.json
+  - type: GettingStarted
+    url: https://api.metalend.tech/SKILL.md
+- aid: metalend:metalend-user-configuration-api
+  name: MetaLend User Configuration API
+  description: User rebalancer configuration management
+  humanURL: https://developer.metalend.tech
+  baseURL: https://api.metalend.tech
+  tags:
+  - User Configuration
+  properties:
+  - type: OpenAPI
+    url: openapi/metalend-user-configuration-api-openapi.yml
+  - type: Authentication
+    url: authentication/metalend-authentication.yml
+  - type: Documentation
+    url: https://metalend-inc.gitbook.io/litepaper
+  - type: APIReference
+    url: https://api.metalend.tech/openapi.json
+  - type: GettingStarted
+    url: https://api.metalend.tech/SKILL.md
+- aid: metalend:metalend-withdrawals-api
+  name: MetaLend Withdrawals API
+  description: Withdrawal operations from pools
+  humanURL: https://developer.metalend.tech
+  baseURL: https://api.metalend.tech
+  tags:
+  - Withdrawals
+  properties:
+  - type: OpenAPI
+    url: openapi/metalend-withdrawals-api-openapi.yml
+  - type: Authentication
+    url: authentication/metalend-authentication.yml
+  - type: Documentation
+    url: https://metalend-inc.gitbook.io/litepaper
+  - type: APIReference
+    url: https://api.metalend.tech/openapi.json
+  - type: GettingStarted
+    url: https://api.metalend.tech/SKILL.md
 common:
+- type: AgenticAccess
+  url: agentic-access/metalend-agentic-access.yml
+- type: Authentication
+  url: authentication/metalend-authentication.yml
+- type: DomainSecurity
+  url: security/metalend-domain-security.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: MCPServer
+  url: mcp/metalend-mcp.yml
+- type: ErrorCatalog
+  url: errors/metalend-error-codes.yml
+- type: Conventions
+  url: conventions/metalend-conventions.yml
+- type: Lifecycle
+  url: lifecycle/metalend-lifecycle.yml
+- type: Conformance
+  url: conformance/metalend-conformance.yml
+- type: Compliance
+  url: https://metalend-inc.gitbook.io/litepaper/security-audits-with-sherlock
+- type: DataModel
+  url: data-model/metalend-data-model.yml
+- type: Sandbox
+  url: sandbox/metalend-sandbox.yml
+- type: Overlay
+  url: overlays/metalend-rebalancing-overlay.yaml
+- type: LLMsTxt
+  url: llms/metalend-llms.txt
+- type: DeveloperPortal
+  url: https://developer.metalend.tech
+- type: Documentation
+  url: https://metalend-inc.gitbook.io/litepaper
+- type: APIReference
+  url: https://api.metalend.tech/openapi.json
+- type: GettingStarted
+  url: https://api.metalend.tech/SKILL.md
+- type: Pricing
+  url: https://metalend-inc.gitbook.io/litepaper/metalend-litepaper/apy-and-fees
+- type: Roadmap
+  url: https://metalend-inc.gitbook.io/litepaper/metalend-litepaper/roadmap
+- type: Support
+  url: https://metalend-inc.gitbook.io/litepaper/metalend-litepaper/support
+- type: Blog
+  url: https://medium.com/metalend
+- type: SignUp
+  url: https://developer.metalend.tech
+- type: TermsOfService
+  url: https://metalend-inc.gitbook.io/litepaper/terms-of-service
+- type: PrivacyPolicy
+  url: https://metalend-inc.gitbook.io/litepaper/privacy-policy
+- type: Twitter
+  url: https://x.com/MetaLend_DeFi
 - type: Website
   url: https://metalend.tech/
+x-enrichment:
+  date: '2026-07-20'
+  status: enriched
+  artifacts_added: 16
+  pass: local-v1

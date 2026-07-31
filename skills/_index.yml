@@ -1,0 +1,28 @@
+generated: '2026-07-20'
+method: searched
+source: https://api.metalend.tech/SKILL.md
+skills:
+  - file: metalend-agent-flow.md
+    name: MetaLend Rebalancing API — AI Agent Flow Guide
+    description: >-
+      Provider-published operating guide for AI agents driving the MetaLend
+      Rebalancing API: SIWE/JWT auth, the config wizard, deposit (EIP-3009) and
+      withdrawal (EIP-712) signing formats, and the known integration gotchas
+      (agentcash Authorization-header stripping, Cloudflare direct-request
+      blocking). Served live and verbatim from GET /SKILL.md.
+    api: openapi/metalend-rebalancing-openapi.json
+    operations:
+      - createAuthChallenge
+      - verifyAuthChallenge
+      - getPools
+      - getConfig
+      - getDefaultConfig
+      - updateConfig
+      - getRebalancerBalances
+      - createDeposit
+      - getDepositStatus
+      - createWithdrawal
+      - getRewards
+      - getTransactionCosts
+    published: true
+    served_at: https://api.metalend.tech/SKILL.md

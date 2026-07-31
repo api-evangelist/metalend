@@ -1,0 +1,21 @@
+generated: '2026-07-20'
+method: searched
+note: >-
+  Probed the /.well-known/ discovery surface on both the website (metalend.tech)
+  and the API host (api.metalend.tech). No discovery documents are published;
+  the website returns its SPA fallback (recorded status 404) and the API host
+  returns its JSON error envelope (404). Recorded for provenance — no WellKnown
+  pointer is wired because nothing was found.
+hosts:
+  - host: https://metalend.tech
+    documents:
+      - {path: /.well-known/security.txt, status: 404}
+      - {path: /.well-known/openid-configuration, status: 404}
+      - {path: /.well-known/oauth-authorization-server, status: 404}
+      - {path: /.well-known/api-catalog, status: 404}
+      - {path: /.well-known/ai-plugin.json, status: 404}
+      - {path: /llms.txt, status: 404}
+      - {path: /robots.txt, status: 200, note: "Cloudflare content-signal robots.txt (ai-train=no, use=reference)"}
+  - host: https://api.metalend.tech
+    documents:
+      - {path: /.well-known/security.txt, status: 404}

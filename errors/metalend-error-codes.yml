@@ -1,0 +1,125 @@
+generated: '2026-07-20'
+method: searched
+source: https://api.metalend.tech/SKILL.md
+spec_source: openapi/metalend-rebalancing-openapi.json
+# MetaLend does NOT use RFC 9457 problem+json. Errors use a custom JSON envelope
+# (the ApiError schema) with a coarse `code` category and a specific `internalCode`.
+format: custom-json
+envelope:
+  fields:
+    - {name: code, description: Error category identifier (coarse)}
+    - {name: internalCode, description: More specific error identifier}
+    - {name: message, description: Human-readable error message}
+    - {name: requestId, format: uuid, description: Unique request identifier for tracking/support}
+    - {name: retryAfterSeconds, type: integer, description: Seconds to wait before retrying (rate limiting / maintenance)}
+  example: |-
+    {"code":"INTERNAL_ERROR","internalCode":"GENERAL_WEB_APP_ERROR","message":"Web application error: HTTP 404 Not Found","requestId":"96086f5a-942e-4e73-b54b-c18d74feef0e","retryAfterSeconds":null,"details":null}
+http_status_codes: [200, 201, 400, 401, 402, 403, 404, 409, 429, 500, 503]
+# internalCode registry harvested from the OpenAPI and the /SKILL.md "Common Errors & Fixes" table.
+codes:
+  - internalCode: NO_AUTH_INFO
+    http: 401
+    meaning: JWT was sent in the standard Authorization header but stripped by an agentic wallet.
+    remediation: "Use the X-MetaLend-JWT: Bearer <token> header instead of Authorization."
+  - internalCode: AUTHENTICATION_FAILED
+    http: 401
+    meaning: API key / JWT authentication failed.
+  - internalCode: AUTH_MESSAGE_EXPIRED_OR_NOT_CREATED
+    http: 401
+    meaning: SIWE challenge was never created or has expired (challenges valid 30 minutes).
+    remediation: Re-request a challenge via POST /v1/auth/challenge.
+  - internalCode: INVALID_SIWE_DETAILS
+    http: 400
+    meaning: SIWE domain/uri/statement/chain details are malformed.
+  - internalCode: INVALID_SIGNATURE
+    http: 400
+    meaning: Signed payload does not verify (wrong data signed for config or withdrawal).
+    remediation: For config, ABI-encode then keccak256 then personal_sign; for withdrawal, sign the withdrawRequest from /v1/balances exactly as returned.
+  - internalCode: FORBIDDEN_GENERIC
+    http: 403
+  - internalCode: THROTTLE_PER_IP
+    http: 429
+    meaning: Per-IP request throttle exceeded.
+    remediation: Honor retryAfterSeconds before retrying.
+  - internalCode: RATE_LIMIT_EXCEEDED
+    http: 429
+    meaning: API rate limit exceeded.
+    remediation: Honor retryAfterSeconds before retrying.
+  - internalCode: DEPOSITS_PAUSED
+    http: 503
+    meaning: New deposits are paused during maintenance.
+    remediation: Retry after maintenance; poll status of in-flight deposits.
+  - internalCode: SERVICE_UNAVAILABLE
+    http: 503
+  - internalCode: BLOCKCHAIN_UNAVAILABLE
+    http: 503
+    meaning: Upstream chain/RPC is unavailable.
+  - internalCode: AMOUNT_TOO_LOW
+    http: 400
+    meaning: Deposit below the minimum (e.g. 0.2 USDC / 200000 raw on Base).
+    remediation: Check GET /v1/transaction-costs/{token} for per-chain minimums.
+  - internalCode: INSUFFICIENT_BALANCE
+    http: 400
+  - internalCode: INVALID_TIMESTAMPS
+    http: 400
+    meaning: validAfter/validBefore window on a signature-based deposit is invalid or expired.
+  - internalCode: INVALID_TOKEN_NAME_OR_VERSION
+    http: 400
+  - internalCode: TOKEN_NOT_SUPPORTED
+    http: 400
+  - internalCode: TOKEN_NOT_SUPPORTED_ON_CHAIN
+    http: 400
+  - internalCode: TOKEN_NOT_SUPPORTED_FOR_SIGNATURE_BASED_DEPOSIT
+    http: 400
+  - internalCode: CHAIN_NOT_SUPPORTED
+    http: 400
+  - internalCode: CHAIN_BLANK
+    http: 400
+  - internalCode: INVALID_POOL
+    http: 400
+  - internalCode: INVALID_PROTOCOL
+    http: 400
+  - internalCode: INVALID_PROTOCOLS_POOLS_AND_DOMAINS
+    http: 400
+  - internalCode: INVALID_COLLATERAL_EXPOSURE
+    http: 400
+  - internalCode: UPDATE_CONFIG_REJECTED
+    http: 409
+    meaning: Config update rejected (e.g. removing a pool that still holds a balance).
+    remediation: Withdraw a pool's balance before removing it from config.
+  - internalCode: WITHDRAWAL_NOT_ALLOWED
+    http: 403
+  - internalCode: APPROVAL_VALIDATION_ERROR
+    http: 400
+  - internalCode: INVALID_ADDRESS_FORMAT
+    http: 400
+  - internalCode: INVALID_ADDRESS_CHECKSUM
+    http: 400
+    meaning: Wallet address is not EIP-55 checksummed.
+  - internalCode: INVALID_EVM_ADDRESS
+    http: 400
+  - internalCode: BLANK_ADDRESS
+    http: 400
+  - internalCode: BLANK_TRACKING_ID
+    http: 400
+  - internalCode: INVALID_TRACKING_ID
+    http: 400
+  - internalCode: REBALANCER_DOES_NOT_EXIST_FOR_WALLET
+    http: 404
+  - internalCode: USER_DOES_NOT_EXIST
+    http: 404
+  - internalCode: RESOURCE_NOT_FOUND
+    http: 404
+  - internalCode: FAILED_BALANCES
+    http: 500
+  - internalCode: ILLEGAL_ARGUMENT
+    http: 400
+  - internalCode: CONFLICT_ERROR
+    http: 409
+  - internalCode: INTERNAL_ERROR
+    http: 500
+    meaning: Generic server error (envelope category returned for uncaught failures).
+# Terminal deposit/withdrawal states (not HTTP errors, surfaced via status polling):
+lifecycle_states:
+  deposit: [PROCESSING, BRIDGING, SUCCESS, FAILED, EMERGENCY_WITHDRAW]
+  withdrawal: [PROCESSING, SUCCESS, FAILED]

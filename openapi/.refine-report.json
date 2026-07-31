@@ -1,0 +1,32 @@
+{
+  "provider": "metalend",
+  "sources": [
+    "metalend-ai-agent-guide-api-openapi.yml",
+    "metalend-auth-api-openapi.yml",
+    "metalend-balances-api-openapi.yml",
+    "metalend-deposits-api-openapi.yml",
+    "metalend-pools-api-openapi.yml",
+    "metalend-rewards-api-openapi.yml",
+    "metalend-services-api-openapi.yml",
+    "metalend-transaction-costs-api-openapi.yml",
+    "metalend-user-configuration-api-openapi.yml",
+    "metalend-withdrawals-api-openapi.yml"
+  ],
+  "outputs": [
+    "metalend-ai-agent-guide-api-openapi.yml",
+    "metalend-auth-api-openapi.yml",
+    "metalend-balances-api-openapi.yml",
+    "metalend-deposits-api-openapi.yml",
+    "metalend-pools-api-openapi.yml",
+    "metalend-rewards-api-openapi.yml",
+    "metalend-services-api-openapi.yml",
+    "metalend-transaction-costs-api-openapi.yml",
+    "metalend-user-configuration-api-openapi.yml",
+    "metalend-withdrawals-api-openapi.yml"
+  ],
+  "archived": [],
+  "errors": [],
+  "warnings": [],
+  "notes": [],
+  "skipped": []
+}

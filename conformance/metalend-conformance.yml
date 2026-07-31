@@ -1,0 +1,39 @@
+generated: '2026-07-20'
+method: searched
+source: openapi/metalend-rebalancing-openapi.json
+docs: https://metalend-inc.gitbook.io/litepaper/metalend-litepaper/security-and-architecture
+standards:
+  - id: eip-4361-siwe
+    conforms: true
+    evidence: POST /v1/auth/challenge + /v1/auth/verify implement Sign-In with Ethereum challenge/verify.
+  - id: eip-191-personal-sign
+    conforms: true
+    evidence: SIWE challenge and config updates signed with personal_sign.
+  - id: eip-712-typed-data
+    conforms: true
+    evidence: Withdrawal signing uses EIP-712 typed-data (domain "MetaLend Rebalancing").
+  - id: eip-3009-receive-with-authorization
+    conforms: true
+    evidence: Gasless USDC/MUSD deposits use EIP-3009 ReceiveWithAuthorization signatures.
+  - id: jwt-rfc7519
+    conforms: true
+    evidence: /v1/auth/verify issues a JWT presented via Authorization/X-MetaLend-JWT.
+  - id: x402-payment-required
+    conforms: true
+    evidence: GET /v1/services returns an x402Version 2 Payment Required body (USDC on Base, eip155:8453).
+  - id: oauth2
+    conforms: false
+    evidence: Auth is API-key + wallet-signature/JWT; no OAuth2 flows.
+  - id: rfc9457-problem-details
+    conforms: false
+    evidence: Errors use a custom {code,internalCode,message,requestId,retryAfterSeconds} envelope, not application/problem+json.
+  - id: pagination
+    conforms: false
+    evidence: No cursor/offset pagination; full result sets returned.
+  - id: idempotency
+    conforms: false
+    evidence: No Idempotency-Key contract; dedup via signed nonces + tracking IDs.
+security_audits:
+  auditor: Sherlock
+  reports_url: https://metalend-inc.gitbook.io/litepaper/security-audits-with-sherlock
+  note: Public smart-contract audit reports published (most recent first).

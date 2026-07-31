@@ -1,0 +1,65 @@
+generated: '2026-07-20'
+method: derived
+source: openapi/metalend-rebalancing-openapi.json
+note: >-
+  Entity-relationship graph derived from the OpenAPI component schemas and the
+  id-reference fields (walletAddress, token, poolAddress, protocolId, domainId)
+  that thread through the operations. Balances are a deeply nested aggregation
+  (token -> chain -> protocol -> pool).
+entities:
+  - name: Wallet
+    key: walletAddress
+    note: EIP-55 checksummed EVM address; the primary subject of every user-scoped call.
+  - name: Rebalancer
+    key: rebalancerAddress
+    note: The user's personal rebalancer contract (target of deposits).
+  - name: RebalancingManager
+    key: rebalancingManagerAddress
+    note: Global manager contract used when signing config updates.
+  - name: Configuration
+    schema: Configuration
+    note: Per-wallet, per-token rebalancer settings (protocols, pools, domains, spending cap).
+  - name: Pool
+    schema: Pool
+    note: A lending pool on a protocol/chain with APY breakdown and sign data.
+  - name: Protocol
+    values: {Aave: 0, Morpho: 1, Euler: 2}
+  - name: Token
+    schema: Token
+    examples: [USDC, USDT, MUSD]
+  - name: Chain
+    key: domainId
+    examples: [BASE, ETHEREUM, POLYGON, ARBITRUM, LINEA]
+  - name: Deposit
+    schema: DepositResponse
+    key: trackingId
+  - name: Withdrawal
+    schema: WithdrawalResponse
+    key: trackingId
+  - name: Balance
+    schema: GetBalancesResponse
+  - name: Rewards
+    schema: GetRewardsResponse
+relationships:
+  - {from: Configuration, type: belongs_to, to: Wallet, via: walletAddress}
+  - {from: Configuration, type: has_many, to: Pool, via: poolAddresses}
+  - {from: Configuration, type: has_many, to: Protocol, via: protocolIds}
+  - {from: Configuration, type: has_many, to: Chain, via: domainIds}
+  - {from: Configuration, type: has_one, to: RebalancingManager, via: rebalancingManagerAddress}
+  - {from: Pool, type: belongs_to, to: Protocol, via: signData.protocolId}
+  - {from: Pool, type: belongs_to, to: Chain, via: signData.domainId}
+  - {from: Pool, type: has_one, to: Token, via: underlyingToken}
+  - {from: Pool, type: has_one, to: PoolApyInfo, via: poolApy}
+  - {from: Deposit, type: belongs_to, to: Wallet, via: walletAddress}
+  - {from: Deposit, type: belongs_to, to: Token, via: token}
+  - {from: Deposit, type: belongs_to, to: Chain, via: chain}
+  - {from: Deposit, type: has_one, to: Rebalancer, via: rebalancerAddress}
+  - {from: Withdrawal, type: belongs_to, to: Wallet, via: walletAddress}
+  - {from: Withdrawal, type: belongs_to, to: Pool, via: poolContract}
+  - {from: Balance, type: belongs_to, to: Wallet, via: walletAddress}
+  - {from: Balance, type: has_many, to: TokenBalance, via: perToken}
+  - {from: TokenBalance, type: has_many, to: ChainBalance, via: perChain}
+  - {from: ChainBalance, type: has_many, to: ProtocolBalance, via: perProtocol}
+  - {from: ProtocolBalance, type: has_many, to: PoolBalance, via: perPool}
+  - {from: Rewards, type: belongs_to, to: Wallet, via: walletAddress}
+  - {from: Rewards, type: has_many, to: RewardSource, via: sources}

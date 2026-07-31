@@ -1,0 +1,69 @@
+generated: '2026-07-20'
+method: searched
+source: https://api.metalend.tech/SKILL.md
+spec_source: openapi/metalend-rebalancing-openapi.json
+summary: >-
+  Cross-cutting request/response semantics for the MetaLend Rebalancing API.
+  Web3-native: API-key + Origin gate on every call, SIWE/JWT for mutating
+  operations, and wallet signatures (EIP-191 / EIP-712 / EIP-3009) on all
+  value-moving actions. No pagination or idempotency-key contract; async
+  operations are tracked by opaque tracking IDs and polled.
+authentication:
+  style: apiKey + jwt + origin
+  headers:
+    - {name: X-API-Key, required: all endpoints}
+    - {name: Origin, required: all endpoints, note: "must match allowed origins for the key; default https://app.metalend.tech"}
+    - {name: Authorization, value: "Bearer <jwt>", required: deposits/withdrawals/config}
+    - {name: X-MetaLend-JWT, value: "Bearer <jwt>", note: "agentic-wallet-safe alias for Authorization; backend accepts both"}
+  ref: authentication/metalend-authentication.yml
+signing:
+  auth: personal_sign (EIP-191) over SIWE (EIP-4361) challenge message
+  config: personal_sign over keccak256(abi.encode(managerAddr, protocolIds[], poolAddresses[], domainIds[], spendingCapRaw))
+  deposit_gasless: EIP-712 ReceiveWithAuthorization (EIP-3009)
+  deposit_approval: on-chain token.approve then unsigned deposit
+  withdrawal: EIP-712 Withdrawal typed-data returned by GET /v1/balances (use verbatim)
+idempotency:
+  supported: false
+  note: >-
+    No Idempotency-Key header. Deduplication for value-moving calls is achieved
+    through client-supplied cryptographic nonces (EIP-3009 nonce on deposits,
+    signed deadlines on withdrawals) and server-issued tracking IDs, not a
+    generic idempotency contract.
+pagination:
+  supported: false
+  note: Collections (pools, balances, rewards) return full result sets; no cursor/offset params.
+async_tracking:
+  pattern: tracking-id + polling
+  deposit: POST /v1/deposits -> trackingId ; GET /v1/deposits/{trackingId} -> status
+  withdrawal: POST /v1/withdrawals -> trackingId ; GET /v1/withdrawals/{trackingId} -> status
+  deposit_states: [PROCESSING, BRIDGING, SUCCESS, FAILED, EMERGENCY_WITHDRAW]
+  withdrawal_states: [PROCESSING, SUCCESS, FAILED]
+request_tracing:
+  field: requestId
+  location: error envelope (ApiError.requestId, uuid)
+  note: Quote requestId when contacting support@metalend.tech.
+versioning:
+  scheme: uri-path
+  current: v1
+  contract_version_endpoint: GET /v1/withdrawals/version
+  ref: lifecycle/metalend-lifecycle.yml
+error_envelope:
+  shape: {code, internalCode, message, requestId, retryAfterSeconds}
+  format: custom-json (not RFC 9457)
+  ref: errors/metalend-error-codes.yml
+rate_limit_signaling:
+  status: 429
+  retry_hint_field: retryAfterSeconds (in error envelope)
+  internal_codes: [RATE_LIMIT_EXCEEDED, THROTTLE_PER_IP]
+payments:
+  protocol: x402 (HTTP 402 Payment Required)
+  observed_on: GET /v1/services
+  network: eip155:8453 (Base)
+  asset: USDC (0x833589fcd6edb6e08f4c7c32d4f71b54bda02913)
+  note: Some resources are gated behind agentic x402 micropayments in USDC on Base.
+cross_links:
+  authentication: authentication/metalend-authentication.yml
+  errors: errors/metalend-error-codes.yml
+  lifecycle: lifecycle/metalend-lifecycle.yml
+  conformance: conformance/metalend-conformance.yml
+  agent_guide: skills/metalend-agent-flow.md

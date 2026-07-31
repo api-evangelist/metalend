@@ -1,0 +1,40 @@
+generated: '2026-07-20'
+method: searched
+source: https://api.metalend.tech/SKILL.md
+note: >-
+  MetaLend does not publish a separate hosted sandbox with fake balances, but it
+  DOES publish a default API key for agent testing/integration and exposes a dev
+  API host. All values below are published verbatim by the provider — none are
+  invented. Value-moving operations still execute against real chains, so agents
+  must obtain explicit signing consent.
+hosts:
+  production: https://api.metalend.tech
+  dev: https://api.dev.metalend.tech
+test_credentials:
+  default_api_key:
+    header: X-API-Key
+    value: a7f2b8c4d9e1f3a6b5c8d2e7f1a4b9c3d6e8f2a5b7c1d4e9f3a6b8c2d5e7f1a4
+    published_at: https://api.metalend.tech/SKILL.md
+    note: Provider-published default key for agent testing/integration. Project owners create their own key at https://developer.metalend.tech.
+  required_origin:
+    header: Origin
+    value: https://app.metalend.tech
+    note: Localhost is always allowed but must be specified explicitly.
+test_values:
+  minimum_deposit:
+    amount: '0.2 USDC'
+    raw: '200000'
+    chain: Base
+    note: Check GET /v1/transaction-costs/{token} for per-chain minimums.
+  supported_tokens_examples: [USDC, USDT, MUSD]
+  supported_chains_examples: [BASE, ETHEREUM, POLYGON, ARBITRUM, LINEA]
+  protocol_ids: {Aave: 0, Morpho: 1, Euler: 2}
+gotchas:
+  - Cloudflare blocks direct Python/curl requests; route through agentcash fetch or a browser-trusted client.
+  - Agentic wallets strip the Authorization header; use X-MetaLend-JWT instead.
+x402_payment:
+  observed_on: GET /v1/services
+  version: 2
+  network: eip155:8453 (Base)
+  asset_symbol: USD Coin
+  asset: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'

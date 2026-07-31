@@ -1,0 +1,43 @@
+generated: '2026-07-20'
+method: searched
+source: openapi/metalend-rebalancing-openapi.json
+docs: https://api.metalend.tech/SKILL.md
+portal: https://developer.metalend.tech
+summary:
+  types:
+  - apiKey
+  api_key_in:
+  - header
+  model: >-
+    Every endpoint requires X-API-Key + Origin. Deposits, withdrawals, and config
+    updates additionally require a JWT obtained via a SIWE (EIP-4361) challenge/verify
+    flow; the JWT is sent as Authorization: Bearer <jwt> or, for agentic wallets that
+    strip Authorization, as X-MetaLend-JWT: Bearer <jwt>. Value-moving calls also carry
+    wallet signatures (EIP-191/EIP-712/EIP-3009). Get an API key at the developer portal.
+schemes:
+- name: ApiKeyAuth
+  type: apiKey
+  in: header
+  parameter: X-API-Key
+  description: API key required for all endpoints.
+  sources:
+  - openapi/metalend-rebalancing-openapi.json
+- name: JwtAuth
+  type: apiKey
+  in: header
+  parameter: Authorization
+  description: |-
+    JWT issued by POST /v1/auth/verify. Pass as Authorization: Bearer <token>.
+
+    x-agent-hint: agentcash and other agentic wallets strip the Authorization header for their own SIWX flow. Use X-MetaLend-JWT: Bearer <token> instead — the backend accepts both headers. Affected endpoints: POST /v1/deposits, POST /v1/withdrawals, PUT /v1/config.
+  sources:
+  - openapi/metalend-rebalancing-openapi.json
+- name: OriginHeader
+  type: apiKey
+  in: header
+  parameter: Origin
+  description: 'Required for CORS requests from browsers. Must match the allowed origins configured
+    for the API key. Example: Origin: https://app.metalend.tech. Localhost is always allowed
+    but must be specified.'
+  sources:
+  - openapi/metalend-rebalancing-openapi.json

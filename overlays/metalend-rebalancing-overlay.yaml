@@ -1,0 +1,29 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancements for MetaLend Rebalancing API
+  version: 1.0.0
+extends: openapi/metalend-rebalancing-openapi.json
+actions:
+  - target: $.info
+    update:
+      x-apievangelist-enriched: '2026-07-20'
+      x-apievangelist-agent-native: true
+      x-apievangelist-notes: >-
+        MetaLend serves a verbatim AI agent flow guide at GET /SKILL.md, carries
+        x-agent-hint auth guidance in its security schemes, and gates GET /v1/services
+        behind an x402 (HTTP 402) agentic micropayment in USDC on Base. Errors use a
+        custom {code,internalCode,message,requestId,retryAfterSeconds} envelope rather
+        than RFC 9457 problem+json.
+  - target: $.info
+    update:
+      x-apievangelist-artifacts:
+        authentication: authentication/metalend-authentication.yml
+        errors: errors/metalend-error-codes.yml
+        conventions: conventions/metalend-conventions.yml
+        conformance: conformance/metalend-conformance.yml
+        lifecycle: lifecycle/metalend-lifecycle.yml
+        data_model: data-model/metalend-data-model.yml
+        sandbox: sandbox/metalend-sandbox.yml
+        agent_skill: skills/metalend-agent-flow.md
+        agentic_access: agentic-access/metalend-agentic-access.yml
+        mcp: mcp/metalend-mcp.yml

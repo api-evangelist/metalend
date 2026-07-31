@@ -1,0 +1,29 @@
+generated: '2026-07-20'
+method: searched
+source: openapi/metalend-rebalancing-openapi.json
+docs: https://metalend-inc.gitbook.io/litepaper
+versioning:
+  scheme: uri-path
+  current: v1
+  spec_version: '0.1.0'
+  contract_version_endpoint: GET /v1/withdrawals/version
+  note: >-
+    Smart-contract versioning is surfaced through the withdrawal contract
+    version endpoint (e.g. domain version "4.0.0" in the EIP-712 withdraw
+    request); the HTTP API is pinned at /v1.
+deprecation:
+  policy_url: null
+  sunset_header: false
+  note: >-
+    No published API deprecation policy or RFC 8594 Sunset/Deprecation headers.
+    A product-level deprecation is documented (Ronin lend-withdrawal flow marked
+    "deprecated from our user experience" in the docs).
+maintenance:
+  signal: HTTP 503 with internalCode DEPOSITS_PAUSED during maintenance windows
+sla:
+  url: null
+  uptime_target: null
+status_page: null
+roadmap: https://metalend-inc.gitbook.io/litepaper/metalend-litepaper/roadmap
+security_audits: https://metalend-inc.gitbook.io/litepaper/security-audits-with-sherlock
+deprecated_operations: []

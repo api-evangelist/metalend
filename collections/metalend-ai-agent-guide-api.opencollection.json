@@ -1,0 +1,37 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "MetaLend Rebalancing AI Agent Guide API",
+    "version": "0.1.0"
+  },
+  "request": {
+    "auth": {
+      "type": "apikey",
+      "key": "X-API-Key",
+      "value": "{{X-API-Key}}",
+      "placement": "header"
+    }
+  },
+  "items": [
+    {
+      "info": {
+        "name": "AI Agent Guide",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get the AI agent flow guide",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/SKILL.md"
+          },
+          "docs": "Returns the MetaLend AI Agent Flow Guide — a comprehensive reference for AI agents covering authentication flows, signing formats, config wizard, deposit/withdrawal patterns, and known failure modes. **AI agents must fetch this document before implementing any MetaLend operation.\n\nThe guide is returned as `text/markdown` and is rate limited to 20 requests per 60 seconds per IP.\n"
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

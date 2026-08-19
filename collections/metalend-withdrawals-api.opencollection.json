@@ -1,0 +1,89 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "MetaLend Rebalancing AI Agent Guide Withdrawals API",
+    "version": "0.1.0"
+  },
+  "request": {
+    "auth": {
+      "type": "apikey",
+      "key": "X-API-Key",
+      "value": "{{X-API-Key}}",
+      "placement": "header"
+    }
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Withdrawals",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Create a withdrawal",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.metalend.tech/v1/withdrawals",
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "apikey",
+              "key": "X-API-Key",
+              "value": "{{X-API-Key}}",
+              "placement": "header"
+            }
+          },
+          "docs": "\n## Source of Funds — Rebalancer Contract Pool Balance\n\nWithdrawals move tokens **from a pool held by the user's rebalancer contract**\nback to the user's wallet. The funds are NOT in the user's wallet — they are\nalready inside the DeFi protocol (Aave, Morpho, or Euler) deposited by the\nrebalancer.\n\n**The `chain`, `token`, `poolContract`, and available `amount` must all be\nderived from `GET /v1/balances/{walletAddress}`** — do not guess or hardcode\nthese values.\n\n## How to build a withdrawal requ"
+        },
+        {
+          "info": {
+            "name": "Get withdrawal status",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/v1/withdrawals/:trackingId",
+            "params": [
+              {
+                "name": "trackingId",
+                "value": "550e8400-e29b-41d4-a716-446655440000",
+                "type": "path",
+                "description": "Tracking ID (UUID) returned from withdrawal creation"
+              }
+            ],
+            "auth": {
+              "type": "apikey",
+              "key": "X-API-Key",
+              "value": "{{X-API-Key}}",
+              "placement": "header"
+            }
+          },
+          "docs": "Retrieves the current status of a withdrawal transaction using its unique tracking ID.\n\n**Status Values:**\n- `PROCESSING`\n- `SUCCESS`\n- `FAILED`.\n\n**Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n"
+        },
+        {
+          "info": {
+            "name": "Get withdrawal contract version",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/v1/withdrawals/version",
+            "auth": {
+              "type": "apikey",
+              "key": "X-API-Key",
+              "value": "{{X-API-Key}}",
+              "placement": "header"
+            }
+          },
+          "docs": "Returns the current version of the rebalancer contracts used for withdrawal signing.\nThis value should be used as the `version` field in the EIP-712 domain when constructing withdrawal signatures.\n\n**Rate limiting**: 1 request per 6 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n"
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

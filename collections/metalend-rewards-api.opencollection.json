@@ -1,0 +1,51 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "MetaLend Rebalancing AI Agent Guide Rewards API",
+    "version": "0.1.0"
+  },
+  "request": {
+    "auth": {
+      "type": "apikey",
+      "key": "X-API-Key",
+      "value": "{{X-API-Key}}",
+      "placement": "header"
+    }
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Rewards",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get rewards",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/v1/rewards/:walletAddress",
+            "params": [
+              {
+                "name": "walletAddress",
+                "value": "0x1234567890123456789012345678901234567890",
+                "type": "path",
+                "description": "User's Ethereum wallet address"
+              },
+              {
+                "name": "reloadChain",
+                "value": "base",
+                "type": "query",
+                "description": "After claiming rewards on a specific chain, pass the chain name to force Merkl cache refresh for that chain. Omit for normal cached fetch.\n"
+              }
+            ]
+          },
+          "docs": "Retrieves aggregated rewards data for the specified wallet address across \nsupported reward sources (currently Merkle-based rewards).\n\nAfter a successful claim on a specific chain, pass `reloadChain` with the human-readable chain name (e.g. `base`, `arbitrum`) to force a Merkl cache refresh for that chain.\n\n**How to claim rewards — the `claimTransaction` is pre-built, just send it.**\n\nEach `RewardItem` with claimable rewards includes a non-null `claimTransaction` \nfield. The backend has already "
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

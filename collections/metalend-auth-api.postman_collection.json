@@ -1,0 +1,727 @@
+{
+  "item": [
+    {
+      "id": "bd15d910-1594-459d-8f2a-3b1a69330eed",
+      "name": "Auth",
+      "description": {
+        "content": "Get challenge / verify challenge authentication",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "1537f2fa-fa6c-44e7-b06d-7d5b7d741729",
+          "name": "Create wallet challenge",
+          "request": {
+            "name": "Create wallet challenge",
+            "description": {
+              "content": "Issues a challenge message that must be signed by the wallet owner.\n\n**Rate limiting**: 1 request per 6 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v1",
+                "auth",
+                "challenge"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"walletAddress\": \"<string>\",\n  \"siweDomain\": \"<string>\",\n  \"siweUri\": \"<string>\",\n  \"siweStatement\": \"<string>\",\n  \"chain\": \"ETHEREUM\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "558a74c1-c28c-43f5-bbe4-37d8081ef2a8",
+              "name": "Challenge issued successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "auth",
+                    "challenge"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x14848abF0125De79e0A5F3caA7F4EA9664a988e8\",\n  \"siweDomain\": \"app.metalend.tech\",\n  \"siweUri\": \"https://app.metalend.tech\",\n  \"siweStatement\": \"Sign in with Ethereum to MetaLend\",\n  \"chain\": \"ETHEREUM\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"string\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "c2b0c989-65e4-4681-9964-a6af61a00adc",
+              "name": "Validation error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "auth",
+                    "challenge"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x14848abF0125De79e0A5F3caA7F4EA9664a988e8\",\n  \"siweDomain\": \"app.metalend.tech\",\n  \"siweUri\": \"https://app.metalend.tech\",\n  \"siweStatement\": \"Sign in with Ethereum to MetaLend\",\n  \"chain\": \"ETHEREUM\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"ILLEGAL_ARGUMENT_ERROR\",\n  \"internalCode\": \"BLANK_ADDRESS\",\n  \"message\": \"Wallet address cannot be blank\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "3aab7244-14af-4d52-a513-41e606201662",
+              "name": "No authorization header provided",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "auth",
+                    "challenge"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x14848abF0125De79e0A5F3caA7F4EA9664a988e8\",\n  \"siweDomain\": \"app.metalend.tech\",\n  \"siweUri\": \"https://app.metalend.tech\",\n  \"siweStatement\": \"Sign in with Ethereum to MetaLend\",\n  \"chain\": \"ETHEREUM\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"AUTHENTICATION_FAILED\",\n  \"internalCode\": \"NO_AUTH_INFO\",\n  \"message\": \"No authentication information provided\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "8d49c836-b514-4f6d-b067-49bb477bb38c",
+              "name": "Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).\n\nResponse headers (when throttled):\n- `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).\n- `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).\n- `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).\n- `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.\n\n`internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "auth",
+                    "challenge"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x14848abF0125De79e0A5F3caA7F4EA9664a988e8\",\n  \"siweDomain\": \"app.metalend.tech\",\n  \"siweUri\": \"https://app.metalend.tech\",\n  \"siweStatement\": \"Sign in with Ethereum to MetaLend\",\n  \"chain\": \"ETHEREUM\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Seconds to wait before retrying this endpoint.",
+                  "key": "Retry-After",
+                  "value": "3"
+                },
+                {
+                  "disabled": false,
+                  "description": "Maximum number of requests allowed in the current window for this endpoint.",
+                  "key": "X-RateLimit-Limit",
+                  "value": "1"
+                },
+                {
+                  "disabled": false,
+                  "description": "Remaining requests in the current window.",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Unix timestamp (seconds) when the current limit window resets.",
+                  "key": "X-RateLimit-Reset",
+                  "value": "1713264123"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"RATE_LIMIT_EXCEEDED\",\n  \"internalCode\": \"THROTTLE_PER_IP\",\n  \"message\": \"Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": 3\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "988ee446-25ec-4382-97df-dd260b50d02f",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "auth",
+                    "challenge"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x14848abF0125De79e0A5F3caA7F4EA9664a988e8\",\n  \"siweDomain\": \"app.metalend.tech\",\n  \"siweUri\": \"https://app.metalend.tech\",\n  \"siweStatement\": \"Sign in with Ethereum to MetaLend\",\n  \"chain\": \"ETHEREUM\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"INTERNAL_ERROR\",\n  \"internalCode\": \"INTERNAL_ERROR\",\n  \"message\": \"An unexpected error occurred while processing your request\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "2899e1a3-f26e-40ec-b592-31c20c71ceb8",
+          "name": "Verify wallet challenge",
+          "request": {
+            "name": "Verify wallet challenge",
+            "description": {
+              "content": "Verifies the signed challenge and issues a JWT for authenticated requests.\n\n**Rate limiting**: 1 request per 12 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v1",
+                "auth",
+                "verify"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"walletAddress\": \"<string>\",\n  \"signature\": \"<string>\",\n  \"chain\": \"ETHEREUM\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "b76383c3-ccf7-43ec-8041-0430fb5f90e4",
+              "name": "Challenge verified successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "auth",
+                    "verify"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x14848abF0125De79e0A5F3caA7F4EA9664a988e8\",\n  \"signature\": \"0x9c1efc293e476948580195863a66203816a3d437a04a92df95c1be979010031c35dbd856110eb161aa59f72cbfe49ff3a64fda3bdb094c2c321edfb13c8215161b\",\n  \"chain\": \"ETHEREUM\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"jwt\": \"string\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "23f81384-4aff-4a29-bf8c-200147624735",
+              "name": "Validation error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "auth",
+                    "verify"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x14848abF0125De79e0A5F3caA7F4EA9664a988e8\",\n  \"signature\": \"0x9c1efc293e476948580195863a66203816a3d437a04a92df95c1be979010031c35dbd856110eb161aa59f72cbfe49ff3a64fda3bdb094c2c321edfb13c8215161b\",\n  \"chain\": \"ETHEREUM\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"ILLEGAL_ARGUMENT_ERROR\",\n  \"internalCode\": \"BLANK_ADDRESS\",\n  \"message\": \"Wallet address cannot be blank\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "44b1aad9-ad51-4190-92c0-5c20ad40588b",
+              "name": "Unauthorized",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "auth",
+                    "verify"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x14848abF0125De79e0A5F3caA7F4EA9664a988e8\",\n  \"signature\": \"0x9c1efc293e476948580195863a66203816a3d437a04a92df95c1be979010031c35dbd856110eb161aa59f72cbfe49ff3a64fda3bdb094c2c321edfb13c8215161b\",\n  \"chain\": \"ETHEREUM\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"AUTHENTICATION_FAILED\",\n  \"internalCode\": \"NO_AUTH_INFO\",\n  \"message\": \"No authentication information provided\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "bfbb7926-1201-45f5-a971-58a412ec8655",
+              "name": "Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).\n\nResponse headers (when throttled):\n- `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).\n- `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).\n- `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).\n- `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.\n\n`internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "auth",
+                    "verify"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x14848abF0125De79e0A5F3caA7F4EA9664a988e8\",\n  \"signature\": \"0x9c1efc293e476948580195863a66203816a3d437a04a92df95c1be979010031c35dbd856110eb161aa59f72cbfe49ff3a64fda3bdb094c2c321edfb13c8215161b\",\n  \"chain\": \"ETHEREUM\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Seconds to wait before retrying this endpoint.",
+                  "key": "Retry-After",
+                  "value": "3"
+                },
+                {
+                  "disabled": false,
+                  "description": "Maximum number of requests allowed in the current window for this endpoint.",
+                  "key": "X-RateLimit-Limit",
+                  "value": "1"
+                },
+                {
+                  "disabled": false,
+                  "description": "Remaining requests in the current window.",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Unix timestamp (seconds) when the current limit window resets.",
+                  "key": "X-RateLimit-Reset",
+                  "value": "1713264123"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"RATE_LIMIT_EXCEEDED\",\n  \"internalCode\": \"THROTTLE_PER_IP\",\n  \"message\": \"Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": 3\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "87c7e063-e281-45ae-b518-2adf629b0ea8",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "auth",
+                    "verify"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x14848abF0125De79e0A5F3caA7F4EA9664a988e8\",\n  \"signature\": \"0x9c1efc293e476948580195863a66203816a3d437a04a92df95c1be979010031c35dbd856110eb161aa59f72cbfe49ff3a64fda3bdb094c2c321edfb13c8215161b\",\n  \"chain\": \"ETHEREUM\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"INTERNAL_ERROR\",\n  \"internalCode\": \"INTERNAL_ERROR\",\n  \"message\": \"An unexpected error occurred while processing your request\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "type": "string",
+      "value": "https://api.metalend.tech",
+      "key": "baseUrl"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}"
+      },
+      {
+        "key": "in",
+        "value": "header"
+      }
+    ]
+  },
+  "info": {
+    "_postman_id": "9777140d-063b-4911-af60-c8489e8ca4a6",
+    "name": "MetaLend Rebalancing AI Agent Guide Auth API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "API for managing cross-protocol cross-chain DeFi rebalancing operations exposing: <ul>\n  <li><b>Auth</b> – challenge/verify flow for JWT issuance.</li>\n  <li><b>Project settings</b> – fetch current project settings.</li>\n  <li><b>User configuration</b> – register or update token-level user-rebalancer settings and fetch current wallet configs.</li>\n  <li><b>Deposits</b> – create deposit intents, receive tracking IDs, and poll status through PROCESSING -> BRIDGING (cross-chain only) -> SUCCESS/FAILED/EMERGENCY_WITHDRAW. New deposits may return <b>503</b> with <b>DEPOSITS_PAUSED</b> during maintenance.</li>\n  <li><b>Withdrawals</b> – submit signed withdrawal requests, receive tracking IDs, and monitor status PROCESSING -> SUCCESS/FAILED.</li>\n  <li><b>Balances</b> – query wallet-level balances and withdraw details, as well as balances in bridge progress.</li>\n  <li><b>Rewards</b> – aggregated rewards and claim details per wallet.</li>\n  <li><b>Pools</b> – list supported protocols (Aave, Morpho, Euler, etc.), their pools, APY breakdowns, and TVL snapshots.</li>\n  <li><b>Transaction Costs</b> – current deposit/withdraw on-behalf transaction fees and minimum amounts by chain.</li>\n  <li><b>AI Agent Guide</b> – Markdown flow guide at <code>/SKILL.md</code> with signing formats, wizard requirements, and known integration gotchas.</li>\n</ul> All endpoints require an <b>X-API-Key</b>. <b>JWT authentication</b> is required on <b>deposit, withdrawal, and config update</b> operations.\n<b>Obtain API key by <a href=\"https://developer.metalend.tech/\" target=\"_blank\" rel=\"noopener noreferrer\">creating a new project</a>.</b>\nAll requests must include the Origin header. Use Origin: https://app.metalend.tech unless you have been assigned a different allowed origin.\n\nContact Support:\n Name: MetaLend API Support\n Email: support@metalend.tech",
+      "type": "text/plain"
+    }
+  }
+}

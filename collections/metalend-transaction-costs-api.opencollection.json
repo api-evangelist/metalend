@@ -1,0 +1,45 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "MetaLend Rebalancing AI Agent Guide Transaction Costs API",
+    "version": "0.1.0"
+  },
+  "request": {
+    "auth": {
+      "type": "apikey",
+      "key": "X-API-Key",
+      "value": "{{X-API-Key}}",
+      "placement": "header"
+    }
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Transaction Costs",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get transaction costs",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/v1/transaction-costs/:token",
+            "params": [
+              {
+                "name": "token",
+                "value": "USDC",
+                "type": "path",
+                "description": "Token symbol"
+              }
+            ]
+          },
+          "docs": "Retrieves gas fee estimates and minimum deposit/withdraw amounts per chain for the specified token.\n\n**Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n"
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

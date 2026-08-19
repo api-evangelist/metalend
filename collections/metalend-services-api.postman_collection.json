@@ -1,0 +1,173 @@
+{
+  "item": [
+    {
+      "id": "b2981232-ec4e-47a5-91d5-4e1e5c0c166e",
+      "name": "Services",
+      "description": {
+        "content": "",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "f2c75da4-6dbf-4f0a-9e78-7709b875141d",
+          "name": "Services directory",
+          "request": {
+            "name": "Services directory",
+            "description": {
+              "content": "Returns MetaLend API services directory with docs links and endpoint summaries.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v1",
+                "services"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "1d86ecc4-1857-4f15-b804-0760b54245c0",
+              "name": "OK",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "services"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"description\": \"string\",\n  \"docs\": {\n    \"openapiYaml\": \"http://tvbhcRySOyZhgzPHNwxkmAFjUch.yxxobl.EkIzVkbaxWmh3LtJk+,K.+qSBNKPUkwsnTepgCVGplRSHawLMBNEGvTgBaUY\",\n    \"swaggerUi\": \"https://PymmCVHZMyIQfHOyQVDWXjZSyP.igsj-0loqtHVQV2suFlfkzavygL1DRNKjwkaqH1pDfsa+qD9CFATOq2,0Y-\"\n  },\n  \"endpoints\": [\n    {\n      \"path\": \"string\",\n      \"description\": \"string\"\n    },\n    {\n      \"path\": \"string\",\n      \"description\": \"string\"\n    }\n  ]\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "74a35015-56f4-4e76-bdd3-dca784ed8207",
+              "name": "Payment required - x402 protocol response with payment requirements",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "services"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Payment Required",
+              "code": 402,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"x402Version\": 2,\n  \"error\": \"Payment required\",\n  \"resource\": {\n    \"url\": \"https://api.metalend.tech/v1/services\",\n    \"description\": \"string\",\n    \"mimeType\": \"application/json\"\n  },\n  \"accepts\": [\n    {\n      \"scheme\": \"exact\",\n      \"network\": \"eip155:8453\",\n      \"amount\": \"1000\",\n      \"payTo\": \"0x7d6E22db7C2Ee44859061061f99E55257A5cEaC1\",\n      \"maxTimeoutSeconds\": 60,\n      \"asset\": \"0x833589fcd6edb6e08f4c7c32d4f71b54bda02913\",\n      \"extra\": {\n        \"name\": \"USD Coin\",\n        \"version\": \"2\"\n      }\n    },\n    {\n      \"scheme\": \"exact\",\n      \"network\": \"eip155:8453\",\n      \"amount\": \"1000\",\n      \"payTo\": \"0x7d6E22db7C2Ee44859061061f99E55257A5cEaC1\",\n      \"maxTimeoutSeconds\": 60,\n      \"asset\": \"0x833589fcd6edb6e08f4c7c32d4f71b54bda02913\",\n      \"extra\": {\n        \"name\": \"USD Coin\",\n        \"version\": \"2\"\n      }\n    }\n  ],\n  \"extensions\": {}\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "type": "string",
+      "value": "https://api.metalend.tech",
+      "key": "baseUrl"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}"
+      },
+      {
+        "key": "in",
+        "value": "header"
+      }
+    ]
+  },
+  "info": {
+    "_postman_id": "49be57b8-83fc-46d3-afce-1a7a089b3cae",
+    "name": "MetaLend Rebalancing AI Agent Guide Services API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "API for managing cross-protocol cross-chain DeFi rebalancing operations exposing: <ul>\n  <li><b>Auth</b> – challenge/verify flow for JWT issuance.</li>\n  <li><b>Project settings</b> – fetch current project settings.</li>\n  <li><b>User configuration</b> – register or update token-level user-rebalancer settings and fetch current wallet configs.</li>\n  <li><b>Deposits</b> – create deposit intents, receive tracking IDs, and poll status through PROCESSING -> BRIDGING (cross-chain only) -> SUCCESS/FAILED/EMERGENCY_WITHDRAW. New deposits may return <b>503</b> with <b>DEPOSITS_PAUSED</b> during maintenance.</li>\n  <li><b>Withdrawals</b> – submit signed withdrawal requests, receive tracking IDs, and monitor status PROCESSING -> SUCCESS/FAILED.</li>\n  <li><b>Balances</b> – query wallet-level balances and withdraw details, as well as balances in bridge progress.</li>\n  <li><b>Rewards</b> – aggregated rewards and claim details per wallet.</li>\n  <li><b>Pools</b> – list supported protocols (Aave, Morpho, Euler, etc.), their pools, APY breakdowns, and TVL snapshots.</li>\n  <li><b>Transaction Costs</b> – current deposit/withdraw on-behalf transaction fees and minimum amounts by chain.</li>\n  <li><b>AI Agent Guide</b> – Markdown flow guide at <code>/SKILL.md</code> with signing formats, wizard requirements, and known integration gotchas.</li>\n</ul> All endpoints require an <b>X-API-Key</b>. <b>JWT authentication</b> is required on <b>deposit, withdrawal, and config update</b> operations.\n<b>Obtain API key by <a href=\"https://developer.metalend.tech/\" target=\"_blank\" rel=\"noopener noreferrer\">creating a new project</a>.</b>\nAll requests must include the Origin header. Use Origin: https://app.metalend.tech unless you have been assigned a different allowed origin.\n\nContact Support:\n Name: MetaLend API Support\n Email: support@metalend.tech",
+      "type": "text/plain"
+    }
+  }
+}

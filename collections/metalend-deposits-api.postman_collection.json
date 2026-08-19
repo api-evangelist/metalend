@@ -1,0 +1,905 @@
+{
+  "item": [
+    {
+      "id": "1f2e286f-a2d7-4bfc-9069-9e91805da96d",
+      "name": "Deposits",
+      "description": {
+        "content": "Deposit operations for rebalancing",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "4ede331a-1493-4bb0-b35b-6e82b0273016",
+          "name": "Create a deposit",
+          "request": {
+            "name": "Create a deposit",
+            "description": {
+              "content": "Initiates a deposit transaction to move funds into an optimal DeFi protocol.<br><br>\nUser owned **rebalancer contract** must be pre-approved to spend tokens. The address of this contract is returned by the `GET /v1/config/{walletAddress}` endpoint. This contract gets deployed during first deposit and its address is pre-computed using CREATE2.<br><br>\nBoth **signature-based (gasless)** and **approval-based** approvals are supported.<br><br>\nActual deposit transaction is executed by an operator on behalf of the user after validating the request and JWT token.\n\n## Required Fields (All Deposits)\n\nThese fields are **always required** regardless of deposit method:\n- `token`: The symbol of the deposit token (e.g., \"USDC\", \"USDT\", \"MUSD\")\n- `walletAddress`: The user address making the deposit (must match JWT token). Currently only EOAs are supported (no smart contract wallets).\n- `amount`: The amount to deposit in token's raw unit (e.g., for USDC with 6 decimals, \"1000000\" = 1 USDC). Token details can be found in the `GET /v1/pools` endpoint. Minimum deposit amount is 0.1 of the token to cover gas fees for on behalf transaction.\n\n## Deposit Methods\n\n### Signature-Based Deposits (EIP-3009)\nSupported for **USDC** and **MUSD** tokens. This method enables gasless approval where \nthe user signs an authorization permit off-chain, and MetaLend executes the transfer on-chain.\n\n**Additional required fields:**\n- `signature`: The user's signature authorizing the transfer\n- `validAfter`: Unix timestamp indicating when the signature becomes valid\n- `validBefore`: Unix timestamp indicating when the signature expires. This must be greater than `validAfter` and within a short time window (max 1 minute in future).\n- `nonce`: A unique 32-byte hex string to prevent replay attacks\n- `tokenName`: The official name of the token (e.g., \"USD Coin\"), can be read on token contract (ERC20 standard).\n- `tokenVersion`: The token contract version, can be read on token contract (ERC20 standard).\n\nSign `ReceiveWithAuthorization` EIP-712 typed data structure as defined by the token contract.\n\n### Approval-Based Deposits\nSupported for **USDT, USDC, MUSD**. This method requires the user \nto approve the rebalancer contract before initiating the deposit by sending a transaction.\n\n**Additional requirements:**\n- Standard ERC-20 approval via the token contract before calling this endpoint\n- Only the base required fields (chain, token, walletAddress, amount) are allowed in the request\n- Do NOT include signature, timestamp, or nonce fields for approval-based deposits\n\n## Authentication & Security\n\n- Requires JWT authentication via JWT token in the Authorization header\n- The JWT must contain the same wallet address as specified in the request body\n\n## Maintenance — deposits paused\n\nMetaLend can temporarily pause **new** deposit creation while other API features (withdrawals, balances, config, pools, etc.) stay available.\n\nWhen paused, this endpoint returns **`503 Service Unavailable`** with `internalCode` **`DEPOSITS_PAUSED`** and does not create a deposit or return a tracking ID.\n\n## Processing Flow\n\n1. Check whether deposits are paused\n2. JWT verification to ensure the caller owns the specified wallet\n3. Request validation (chain, token, amount, address, signature/approval requirements)\n4. Deposit request is queued for processing with a unique tracking ID\n5. Returns immediately tracking ID\n6. Use `GET /v1/deposits/{trackingId}` to monitor the deposit progress\n\n## Response\n\nReturns a **tracking ID** that can be used to poll the deposit status. The tracking ID is:\n- A randomly generated UUID\n\nThe tracking ID can be used with the status endpoint \nto check if the deposit was successful, failed, is still processing or is bridging.\n\n## Source of Funds — User's Own Wallet ERC20 Balance\n\nDeposits move tokens **from the user's own wallet** (their personal ERC20 balance \non-chain) into a DeFi protocol via the MetaLend rebalancer contract.\n\n**The `chain` field must be the chain where the user currently holds the ERC20 token \nbalance in their wallet.** For example, if the user has USDC on Ethereum, \n`chain` must be `\"ETHEREUM\"`. If they have USDC on Base, `chain` must be `\"BASE\"`.\n\nBefore calling this endpoint:\n1. Check the user's ERC20 balance: `token.balanceOf(userWalletAddress)` on the \n  target chain — this is what they are depositing from.\n2. For **approval-based** deposits: call `token.approve(rebalancerAddress, amount)` \n  on the same chain before calling this endpoint.\n3. For **signature-based** deposits (USDC/MUSD only): sign the `ReceiveWithAuthorization` \n  permit off-chain — no on-chain approval transaction needed.\n\nThe rebalancer contract address to approve is returned by \n`GET /v1/config/{walletAddress}` in the `rebalancerAddress` field.\n\n## Notes\n- Smart contract wallets that do not comply with standard signature length are currently not supported\n- For signature-based deposits, ensure timestamps are within valid range\n\n**Rate limiting**: 1 request per 6 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v1",
+                "deposits"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "key",
+                  "value": "X-API-Key"
+                },
+                {
+                  "key": "value",
+                  "value": "{{apiKey}}"
+                },
+                {
+                  "key": "in",
+                  "value": "header"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chain\": \"<string>\",\n  \"token\": \"<string>\",\n  \"walletAddress\": \"<string>\",\n  \"amount\": \"<string>\",\n  \"validAfter\": \"<string>\",\n  \"validBefore\": \"<string>\",\n  \"nonce\": \"<string>\",\n  \"signature\": \"<string>\",\n  \"tokenName\": \"<string>\",\n  \"tokenVersion\": \"<string>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "5fb5d558-135b-47d8-b531-3c7f0cdc9618",
+              "name": "Deposit initiated successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"chain\": \"LINEA\",\n  \"token\": \"USDC\",\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"amount\": \"1000000\",\n  \"validAfter\": \"1700000000\",\n  \"validBefore\": \"1700000100\",\n  \"nonce\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"tokenName\": \"USD Coin\",\n  \"tokenVersion\": \"2\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"trackingId\": \"550e8400-e29b-41d4-a716-446655440000\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "713825c7-74eb-414c-9294-4c7459d28da4",
+              "name": "Validation error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"chain\": \"LINEA\",\n  \"token\": \"USDC\",\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"amount\": \"1000000\",\n  \"validAfter\": \"1700000000\",\n  \"validBefore\": \"1700000100\",\n  \"nonce\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"tokenName\": \"USD Coin\",\n  \"tokenVersion\": \"2\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"ILLEGAL_ARGUMENT_ERROR\",\n  \"internalCode\": \"BLANK_ADDRESS\",\n  \"message\": \"Wallet address cannot be blank\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "272a774a-dd87-4a1e-8106-6b3030359d5e",
+              "name": "No authorization header provided",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"chain\": \"LINEA\",\n  \"token\": \"USDC\",\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"amount\": \"1000000\",\n  \"validAfter\": \"1700000000\",\n  \"validBefore\": \"1700000100\",\n  \"nonce\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"tokenName\": \"USD Coin\",\n  \"tokenVersion\": \"2\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"AUTHENTICATION_FAILED\",\n  \"internalCode\": \"NO_AUTH_INFO\",\n  \"message\": \"No authentication information provided\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "c489c5a8-07ad-4479-8ccd-2d4581e73779",
+              "name": "User is not authorized to perform this action",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"chain\": \"LINEA\",\n  \"token\": \"USDC\",\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"amount\": \"1000000\",\n  \"validAfter\": \"1700000000\",\n  \"validBefore\": \"1700000100\",\n  \"nonce\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"tokenName\": \"USD Coin\",\n  \"tokenVersion\": \"2\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"FORBIDDEN\",\n  \"internalCode\": \"FORBIDDEN_GENERIC\",\n  \"message\": \"User is not authorized to perform this action\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "a369bb6d-b323-4b1a-8ad8-1df334ce713d",
+              "name": "Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).\n\nResponse headers (when throttled):\n- `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).\n- `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).\n- `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).\n- `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.\n\n`internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"chain\": \"LINEA\",\n  \"token\": \"USDC\",\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"amount\": \"1000000\",\n  \"validAfter\": \"1700000000\",\n  \"validBefore\": \"1700000100\",\n  \"nonce\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"tokenName\": \"USD Coin\",\n  \"tokenVersion\": \"2\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Seconds to wait before retrying this endpoint.",
+                  "key": "Retry-After",
+                  "value": "3"
+                },
+                {
+                  "disabled": false,
+                  "description": "Maximum number of requests allowed in the current window for this endpoint.",
+                  "key": "X-RateLimit-Limit",
+                  "value": "1"
+                },
+                {
+                  "disabled": false,
+                  "description": "Remaining requests in the current window.",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Unix timestamp (seconds) when the current limit window resets.",
+                  "key": "X-RateLimit-Reset",
+                  "value": "1713264123"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"RATE_LIMIT_EXCEEDED\",\n  \"internalCode\": \"THROTTLE_PER_IP\",\n  \"message\": \"Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": 3\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "4ae544b9-8dd3-486b-ae77-2c8632b34b4d",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"chain\": \"LINEA\",\n  \"token\": \"USDC\",\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"amount\": \"1000000\",\n  \"validAfter\": \"1700000000\",\n  \"validBefore\": \"1700000100\",\n  \"nonce\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"tokenName\": \"USD Coin\",\n  \"tokenVersion\": \"2\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"INTERNAL_ERROR\",\n  \"internalCode\": \"INTERNAL_ERROR\",\n  \"message\": \"An unexpected error occurred while processing your request\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "bfa8289a-0827-4b6d-b9ac-d646e4a07ba8",
+              "name": "Service unavailable — deposits paused (maintenance)",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"chain\": \"LINEA\",\n  \"token\": \"USDC\",\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"amount\": \"1000000\",\n  \"validAfter\": \"1700000000\",\n  \"validBefore\": \"1700000100\",\n  \"nonce\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"tokenName\": \"USD Coin\",\n  \"tokenVersion\": \"2\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Service Unavailable",
+              "code": 503,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"SERVICE_UNAVAILABLE\",\n  \"internalCode\": \"DEPOSITS_PAUSED\",\n  \"message\": \"Deposits are temporarily paused\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "6cc920fd-c3cd-4ee2-8eaf-7c8b13393f79",
+          "name": "Get deposit status",
+          "request": {
+            "name": "Get deposit status",
+            "description": {
+              "content": "Retrieves the current status and details of a deposit transaction using its unique tracking ID.\n\nThis endpoint allows you to monitor the progress of a deposit from initiation to completion. \nThe tracking ID is returned when you create a deposit in UUID format.\n\nPlease be aware that if you see failed state, it can be also due to high gas fees, max allowed is 1 USD in gas fees, otherwise it will fail.\n\n**Status Values** (returned in `status`):\n- `PROCESSING`: Deposit is queued or being handled on the source chain.\n- `BRIDGING` (cross-chain only): Source-side funds movement succeeded and is bridging to the destination chain. Same-chain deposits go straight to final `SUCCESS` or `FAILED` status.\n- `SUCCESS`: Deposit has been successfully completed and funds are in the protocol.\n- `FAILED`: Deposit transaction has failed (e.g., insufficient gas, transaction reverted).\n- `EMERGENCY_WITHDRAW`: Destination-side deposit could not complete; funds were recovered via emergency withdrawal.\n\nThe API only exposes the five values above. Any other internal persistence state is mapped to `PROCESSING` for this response until the flow resolves.\n\n**Response Details:**\nWhen successful, the response includes:\n- Current deposit status (\"SUCCESS\")\n- Target protocol name (e.g., \"Aave\", \"Morpho\", \"Euler\") where funds were deposited\n- Pool/vault contract address receiving the funds\n- Blockchain network where the deposit occurred\n\n**Use Cases:**\n- Poll this endpoint to track deposit progress after creation\n- Verify successful completion before proceeding with other operations\n- Display real-time status updates to users in your application\n\n**Note:** If you receive a error code, the tracking ID is probably invalid or no deposit exists for that ID.\n\n**Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v1",
+                "deposits",
+                ":trackingId"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "trackingId",
+                  "description": "(Required) Tracking ID (UUID) returned from deposit creation"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "key",
+                  "value": "X-API-Key"
+                },
+                {
+                  "key": "value",
+                  "value": "{{apiKey}}"
+                },
+                {
+                  "key": "in",
+                  "value": "header"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "7c97c7eb-6f51-4b6e-aa3e-17a5fb5963e9",
+              "name": "Deposit status retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits",
+                    ":trackingId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "trackingId",
+                      "description": "(Required) Tracking ID (UUID) returned from deposit creation"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"PROCESSING\",\n  \"protocol\": null,\n  \"pool\": null,\n  \"chain\": \"base\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "f7825c25-fd3e-4c0b-ac69-7ae9bee838f1",
+              "name": "Validation error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits",
+                    ":trackingId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "trackingId",
+                      "description": "(Required) Tracking ID (UUID) returned from deposit creation"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"ILLEGAL_ARGUMENT_ERROR\",\n  \"internalCode\": \"BLANK_TRACKING_ID\",\n  \"message\": \"Tracking ID cannot be blank\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "9f9e98b5-4fdc-4849-ab27-9705ca66c6b1",
+              "name": "No authorization header provided",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits",
+                    ":trackingId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "trackingId",
+                      "description": "(Required) Tracking ID (UUID) returned from deposit creation"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"AUTHENTICATION_FAILED\",\n  \"internalCode\": \"NO_AUTH_INFO\",\n  \"message\": \"No authentication information provided\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "9dd4fda6-f501-45d2-8f4d-3eb5fcad3d8d",
+              "name": "Tracking ID not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits",
+                    ":trackingId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "trackingId",
+                      "description": "(Required) Tracking ID (UUID) returned from deposit creation"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"NOT_FOUND_ERROR\",\n  \"internalCode\": \"RESOURCE_NOT_FOUND\",\n  \"message\": \"deposits/{trackingId} with identifier '0x1234...abcdef01' not found\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "13d9bac3-416d-4e6b-ac71-ff30c6ba67e3",
+              "name": "Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).\n\nResponse headers (when throttled):\n- `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).\n- `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).\n- `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).\n- `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.\n\n`internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits",
+                    ":trackingId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "trackingId",
+                      "description": "(Required) Tracking ID (UUID) returned from deposit creation"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Seconds to wait before retrying this endpoint.",
+                  "key": "Retry-After",
+                  "value": "3"
+                },
+                {
+                  "disabled": false,
+                  "description": "Maximum number of requests allowed in the current window for this endpoint.",
+                  "key": "X-RateLimit-Limit",
+                  "value": "1"
+                },
+                {
+                  "disabled": false,
+                  "description": "Remaining requests in the current window.",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Unix timestamp (seconds) when the current limit window resets.",
+                  "key": "X-RateLimit-Reset",
+                  "value": "1713264123"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"RATE_LIMIT_EXCEEDED\",\n  \"internalCode\": \"THROTTLE_PER_IP\",\n  \"message\": \"Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": 3\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "49710e5d-33fe-4438-9c5a-59e54c0c46ac",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "deposits",
+                    ":trackingId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "trackingId",
+                      "description": "(Required) Tracking ID (UUID) returned from deposit creation"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"INTERNAL_ERROR\",\n  \"internalCode\": \"INTERNAL_ERROR\",\n  \"message\": \"An unexpected error occurred while processing your request\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "type": "string",
+      "value": "https://api.metalend.tech",
+      "key": "baseUrl"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}"
+      },
+      {
+        "key": "in",
+        "value": "header"
+      }
+    ]
+  },
+  "info": {
+    "_postman_id": "49376dc3-ebb4-4f93-b4fd-cd2b358959f5",
+    "name": "MetaLend Rebalancing AI Agent Guide Deposits API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "API for managing cross-protocol cross-chain DeFi rebalancing operations exposing: <ul>\n  <li><b>Auth</b> – challenge/verify flow for JWT issuance.</li>\n  <li><b>Project settings</b> – fetch current project settings.</li>\n  <li><b>User configuration</b> – register or update token-level user-rebalancer settings and fetch current wallet configs.</li>\n  <li><b>Deposits</b> – create deposit intents, receive tracking IDs, and poll status through PROCESSING -> BRIDGING (cross-chain only) -> SUCCESS/FAILED/EMERGENCY_WITHDRAW. New deposits may return <b>503</b> with <b>DEPOSITS_PAUSED</b> during maintenance.</li>\n  <li><b>Withdrawals</b> – submit signed withdrawal requests, receive tracking IDs, and monitor status PROCESSING -> SUCCESS/FAILED.</li>\n  <li><b>Balances</b> – query wallet-level balances and withdraw details, as well as balances in bridge progress.</li>\n  <li><b>Rewards</b> – aggregated rewards and claim details per wallet.</li>\n  <li><b>Pools</b> – list supported protocols (Aave, Morpho, Euler, etc.), their pools, APY breakdowns, and TVL snapshots.</li>\n  <li><b>Transaction Costs</b> – current deposit/withdraw on-behalf transaction fees and minimum amounts by chain.</li>\n  <li><b>AI Agent Guide</b> – Markdown flow guide at <code>/SKILL.md</code> with signing formats, wizard requirements, and known integration gotchas.</li>\n</ul> All endpoints require an <b>X-API-Key</b>. <b>JWT authentication</b> is required on <b>deposit, withdrawal, and config update</b> operations.\n<b>Obtain API key by <a href=\"https://developer.metalend.tech/\" target=\"_blank\" rel=\"noopener noreferrer\">creating a new project</a>.</b>\nAll requests must include the Origin header. Use Origin: https://app.metalend.tech unless you have been assigned a different allowed origin.\n\nContact Support:\n Name: MetaLend API Support\n Email: support@metalend.tech",
+      "type": "text/plain"
+    }
+  }
+}

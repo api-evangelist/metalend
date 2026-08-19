@@ -1,0 +1,1228 @@
+{
+  "item": [
+    {
+      "id": "02b16c51-a1d6-4968-ae25-b60a8710e1d3",
+      "name": "User Configuration",
+      "description": {
+        "content": "User rebalancer configuration management",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "72c46a88-5e15-4ae3-a7f2-77d55f5147e6",
+          "name": "Update rebalancer configuration",
+          "request": {
+            "name": "Update rebalancer configuration",
+            "description": {
+              "content": "Creates or updates the rebalancing configuration for a specific wallet address and token. This endpoint allows users to set custom protocols and pools for automated rebalancing of their funds.\n\n**Authentication**: Requires a valid JWT token. The wallet address in the JWT must match the `walletAddress` field in the request body.\n\n**Configuration per Token**: Each request configures one specific token (USDC, MUSD, or USDT, RLUSD). To configure multiple tokens, make separate PUT requests for each token. After successfully setting a configuration for a token, the `hasSignedConfig` flag for that token will become `true` when retrieved via GET `/v1/config/{walletAddress}`.\n\n**Configuration Structure**: The configuration specifies arrays of domain IDs, protocol IDs, and pool contract addresses. All three arrays must have the same length, with each index representing one pool configuration:\n- `domainIds[0]`, `protocolIds[0]`, `poolAddresses[0]` = first pool\n- `domainIds[1]`, `protocolIds[1]`, `poolAddresses[1]` = second pool\n- And so on...\n\n**Domain IDs**: \n- `11` = LINEA\n- `6` = BASE\n- `7` = POLYGON\n- `3` = ARBITRUM\n- `1` = AVALANCHE\n- `2` = OPTIMISM\n- `0` = ETHEREUM\n\n**Protocol IDs**: Maps to supported protocols:\n- `0` = Aave\n- `1` = Morpho\n- `2` = Euler\n\n**Collateral Exposure**: Collateral exposure symbols for the pools in the configuration, must be taken from the pool catalog from GET /v1/pools, unique and not empty. If you want to disable the filter, pass null.\nexample: [\"WETH\", \"cbBTC\", \"wstETH\"]\n\nTvl and liquidity multiplier are optional and can be used to filter the pools in the configuration.\nExample:\n- requiredTvl: 5000000\n- requiredLiquidityMultiplier: 10\nThis will filter the pools in the configuration to only include pools that have a TVL of at least $5M and a liquidity multiplier of at least 10.\nExample:\n- requiredTvl: 0\n- requiredLiquidityMultiplier: 0\nThis will disable the filter and include all pools in the configuration.\nDuring deposits, pools that do not comply with filters (exposure, liquidity, tvl) are ignored. Active balances are also monitored periodically and if a pool with a deposit no longer complies with the filters, rebalance immediately happens outside to first available pool with highest APY %\n\n**Pool Contracts**: Each pool contract address must be a valid checksummed Ethereum address (EIP-55) corresponding to a pool on the specified protocol. Pool addresses can be obtained from the `/v1/pools` endpoint.\n\n**Signature Requirement**: The `signature` field must be created using the following steps:\n\n1. ABI-encode the following parameters in order:\n  - `address` — `rebalancingManagerAddress` (from `GET /v1/config/{walletAddress}`)\n  - `uint8[]` — `protocolIds` array\n  - `address[]` — `poolAddresses` array\n  - `uint32[]` — `domainIds` array\n  - `uint256` — `spendingCapRaw` (use `\"0\"` if not set, can be set only for USDC, when setting this value, AAVE protocol on LINEA must be included in the configuration with a non-zero spending cap, otherwise the request will be rejected)\n\n2. Compute `keccak256` of the ABI-encoded bytes.\n\n3. Sign the resulting hash using `personal_sign` (i.e. `eth_sign` with the standard Ethereum prefix `\\x19Ethereum Signed Message:\\n32`). In viem this is `walletClient.signMessage({ account, message: { raw: hash } })`.\n\nThe signature must be 132 characters long (0x + 130 hex characters) and must be signed by the wallet address in the `walletAddress` field.\n\n**Smart Contract Wallets / ERC-6492**: For contract wallet signatures, the backend validates the configuration signature on every chain contained within the `domainIds`. If the signature is rejected on any of those chains, the entire configuration is rejected. The error response will indicate which domain IDs were rejected: `\"Contract wallets configs can only contain chains verified by supported signature. Found rejected domain IDs: <rejectedIds>\"`.\n\n**Include Rewards APY**: The optional `includeRewardsApy` boolean flag (default: `true`) determines whether reward APYs should be included in APY calculations during rebalancing decisions.\n\n**Response**: Returns `201 Created` if this is the first configuration for the wallet, or `200 OK` if updating an existing configuration. The response includes the deployed rebalancer contract address and the list of configured tokens.\n\n**Rate limiting**: 1 request per 6 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v1",
+                "config"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "key",
+                  "value": "X-API-Key"
+                },
+                {
+                  "key": "value",
+                  "value": "{{apiKey}}"
+                },
+                {
+                  "key": "in",
+                  "value": "header"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"walletAddress\": \"<string>\",\n  \"token\": \"<string>\",\n  \"domainIds\": [\n    \"<integer>\",\n    \"<integer>\"\n  ],\n  \"protocolIds\": [\n    \"<integer>\",\n    \"<integer>\"\n  ],\n  \"poolAddresses\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"signature\": \"<string>\",\n  \"includeRewardsApy\": true,\n  \"requiredTvl\": 0,\n  \"requiredLiquidityMultiplier\": 0,\n  \"spendingCapRaw\": \"0\",\n  \"collateralExposure\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "f5dd14c9-af6c-4761-b472-44fada96db14",
+              "name": "Configuration updated successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"token\": \"USDC\",\n  \"domainIds\": [\n    11,\n    11,\n    11\n  ],\n  \"protocolIds\": [\n    0,\n    1,\n    2\n  ],\n  \"poolAddresses\": [\n    \"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd\",\n    \"0x1111111111111111111111111111111111111111\",\n    \"0x2222222222222222222222222222222222222222\"\n  ],\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"includeRewardsApy\": true,\n  \"requiredTvl\": 5000000,\n  \"requiredLiquidityMultiplier\": 10,\n  \"collateralExposure\": [\n    \"WETH\",\n    \"cbBTC\",\n    \"wstETH\"\n  ],\n  \"spendingCapRaw\": \"0\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"rebalancerAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"configuredToken\": \"USDC\",\n  \"operation\": \"UPDATED\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "c073f996-f25e-476b-a9b4-1633d0aec07f",
+              "name": "Configuration created successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"token\": \"USDC\",\n  \"domainIds\": [\n    11,\n    11,\n    11\n  ],\n  \"protocolIds\": [\n    0,\n    1,\n    2\n  ],\n  \"poolAddresses\": [\n    \"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd\",\n    \"0x1111111111111111111111111111111111111111\",\n    \"0x2222222222222222222222222222222222222222\"\n  ],\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"includeRewardsApy\": true,\n  \"requiredTvl\": 5000000,\n  \"requiredLiquidityMultiplier\": 10,\n  \"collateralExposure\": [\n    \"WETH\",\n    \"cbBTC\",\n    \"wstETH\"\n  ],\n  \"spendingCapRaw\": \"0\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"rebalancerAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"configuredToken\": \"USDC\",\n  \"operation\": \"CREATED\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "19a3efe2-8107-4285-babc-6039b9fb5253",
+              "name": "Validation error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"token\": \"USDC\",\n  \"domainIds\": [\n    11,\n    11,\n    11\n  ],\n  \"protocolIds\": [\n    0,\n    1,\n    2\n  ],\n  \"poolAddresses\": [\n    \"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd\",\n    \"0x1111111111111111111111111111111111111111\",\n    \"0x2222222222222222222222222222222222222222\"\n  ],\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"includeRewardsApy\": true,\n  \"requiredTvl\": 5000000,\n  \"requiredLiquidityMultiplier\": 10,\n  \"collateralExposure\": [\n    \"WETH\",\n    \"cbBTC\",\n    \"wstETH\"\n  ],\n  \"spendingCapRaw\": \"0\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"ILLEGAL_ARGUMENT_ERROR\",\n  \"internalCode\": \"BLANK_ADDRESS\",\n  \"message\": \"Wallet address cannot be blank\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "aca803f4-4bd6-4495-bd2d-4f57711e9bf9",
+              "name": "No authorization header provided",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"token\": \"USDC\",\n  \"domainIds\": [\n    11,\n    11,\n    11\n  ],\n  \"protocolIds\": [\n    0,\n    1,\n    2\n  ],\n  \"poolAddresses\": [\n    \"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd\",\n    \"0x1111111111111111111111111111111111111111\",\n    \"0x2222222222222222222222222222222222222222\"\n  ],\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"includeRewardsApy\": true,\n  \"requiredTvl\": 5000000,\n  \"requiredLiquidityMultiplier\": 10,\n  \"collateralExposure\": [\n    \"WETH\",\n    \"cbBTC\",\n    \"wstETH\"\n  ],\n  \"spendingCapRaw\": \"0\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"AUTHENTICATION_FAILED\",\n  \"internalCode\": \"NO_AUTH_INFO\",\n  \"message\": \"No authentication information provided\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "c9573452-bfab-4181-8d52-5b672404880c",
+              "name": "User is not authorized to perform this action",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"token\": \"USDC\",\n  \"domainIds\": [\n    11,\n    11,\n    11\n  ],\n  \"protocolIds\": [\n    0,\n    1,\n    2\n  ],\n  \"poolAddresses\": [\n    \"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd\",\n    \"0x1111111111111111111111111111111111111111\",\n    \"0x2222222222222222222222222222222222222222\"\n  ],\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"includeRewardsApy\": true,\n  \"requiredTvl\": 5000000,\n  \"requiredLiquidityMultiplier\": 10,\n  \"collateralExposure\": [\n    \"WETH\",\n    \"cbBTC\",\n    \"wstETH\"\n  ],\n  \"spendingCapRaw\": \"0\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"FORBIDDEN\",\n  \"internalCode\": \"FORBIDDEN_GENERIC\",\n  \"message\": \"User is not authorized to perform this action\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "0dba2d71-291d-4d8d-830f-59602e4e6934",
+              "name": "Conflict - config update not allowed",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"token\": \"USDC\",\n  \"domainIds\": [\n    11,\n    11,\n    11\n  ],\n  \"protocolIds\": [\n    0,\n    1,\n    2\n  ],\n  \"poolAddresses\": [\n    \"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd\",\n    \"0x1111111111111111111111111111111111111111\",\n    \"0x2222222222222222222222222222222222222222\"\n  ],\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"includeRewardsApy\": true,\n  \"requiredTvl\": 5000000,\n  \"requiredLiquidityMultiplier\": 10,\n  \"collateralExposure\": [\n    \"WETH\",\n    \"cbBTC\",\n    \"wstETH\"\n  ],\n  \"spendingCapRaw\": \"0\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"CONFLICT_ERROR\",\n  \"internalCode\": \"UPDATE_CONFIG_REJECTED\",\n  \"message\": \"Config upsert rejected: Bridge in progress for USDC\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "eec79225-f6a8-46a1-916e-fb04f301214f",
+              "name": "Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).\n\nResponse headers (when throttled):\n- `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).\n- `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).\n- `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).\n- `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.\n\n`internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"token\": \"USDC\",\n  \"domainIds\": [\n    11,\n    11,\n    11\n  ],\n  \"protocolIds\": [\n    0,\n    1,\n    2\n  ],\n  \"poolAddresses\": [\n    \"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd\",\n    \"0x1111111111111111111111111111111111111111\",\n    \"0x2222222222222222222222222222222222222222\"\n  ],\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"includeRewardsApy\": true,\n  \"requiredTvl\": 5000000,\n  \"requiredLiquidityMultiplier\": 10,\n  \"collateralExposure\": [\n    \"WETH\",\n    \"cbBTC\",\n    \"wstETH\"\n  ],\n  \"spendingCapRaw\": \"0\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Seconds to wait before retrying this endpoint.",
+                  "key": "Retry-After",
+                  "value": "3"
+                },
+                {
+                  "disabled": false,
+                  "description": "Maximum number of requests allowed in the current window for this endpoint.",
+                  "key": "X-RateLimit-Limit",
+                  "value": "1"
+                },
+                {
+                  "disabled": false,
+                  "description": "Remaining requests in the current window.",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Unix timestamp (seconds) when the current limit window resets.",
+                  "key": "X-RateLimit-Reset",
+                  "value": "1713264123"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"RATE_LIMIT_EXCEEDED\",\n  \"internalCode\": \"THROTTLE_PER_IP\",\n  \"message\": \"Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": 3\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "bb63e7a9-cd5a-465c-95d5-2e4488ff117f",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"token\": \"USDC\",\n  \"domainIds\": [\n    11,\n    11,\n    11\n  ],\n  \"protocolIds\": [\n    0,\n    1,\n    2\n  ],\n  \"poolAddresses\": [\n    \"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd\",\n    \"0x1111111111111111111111111111111111111111\",\n    \"0x2222222222222222222222222222222222222222\"\n  ],\n  \"signature\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01\",\n  \"includeRewardsApy\": true,\n  \"requiredTvl\": 5000000,\n  \"requiredLiquidityMultiplier\": 10,\n  \"collateralExposure\": [\n    \"WETH\",\n    \"cbBTC\",\n    \"wstETH\"\n  ],\n  \"spendingCapRaw\": \"0\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"INTERNAL_ERROR\",\n  \"internalCode\": \"INTERNAL_ERROR\",\n  \"message\": \"An unexpected error occurred while processing your request\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "42ca5b51-dac0-445c-b410-fb1f19932835",
+          "name": "Get rebalancer configuration",
+          "request": {
+            "name": "Get rebalancer configuration",
+            "description": {
+              "content": "Retrieves the current rebalancing configuration state for a specific wallet address across all supported tokens.\n\nThis endpoint returns configurations for each supported token, including:\n- **Rebalancer Address**: The smart contract address of the user's rebalancer\n- **Rebalancing Manager Address**: The address of the rebalancing manager contract\n- **Configurations**: List of configuration items, one per supported token, each containing:\n  - Token information\n  - Domain IDs, Protocol IDs, and Pool contracts\n  - **hasSignedConfig**: Boolean flag indicating the configuration state for this specific token\n\n**Understanding hasSignedConfig (per token):**\n- `true`: The user has signed and set their own custom configuration for this token\n- `false`: The user has not signed any configuration for this token yet, and the returned values represent the default configuration\n\nWhen `hasSignedConfig` is false for a token, the configuration data shows what the default state allows, but it hasn't been actively set by the user for that token. This state must be signed by user to confirm the configuration. Each token can have a different `hasSignedConfig` status.\n\n**Note:** Requires a valid API key to query configurations.\n\n**Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v1",
+                "config",
+                ":walletAddress"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "walletAddress",
+                  "description": "(Required) Ethereum wallet address"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "1993c098-cd0e-4d25-a9e5-39b77c4f8bc0",
+              "name": "Configuration retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config",
+                    ":walletAddress"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "walletAddress",
+                      "description": "(Required) Ethereum wallet address"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"walletAddress\": \"0x1234567890123456789012345678901234567890\",\n  \"rebalancerAddress\": \"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd\",\n  \"rebalancingManagerAddress\": \"0x971ad06e6fde83b0265bd3ced5f5eaf30e269962\",\n  \"rebalancerExists\": true,\n  \"configurations\": [\n    {\n      \"token\": \"USDC\",\n      \"domainIds\": [\n        11\n      ],\n      \"protocolIds\": [\n        0\n      ],\n      \"poolAddresses\": [\n        \"0xc47b8c00b0f69a36fa203ffeac0334874574a8ac\"\n      ],\n      \"includeRewardsApy\": true,\n      \"lastRebalanceTimestamp\": \"2025-01-15T10:30:00Z\",\n      \"rebalanceFrequency\": 7,\n      \"totalGasFee\": \"0.00\",\n      \"totalDeposits\": \"0.00\",\n      \"totalWithdrawals\": \"0.00\",\n      \"requiredTvl\": \"0\",\n      \"requiredLiquidityMultiplier\": \"0\",\n      \"spendingCapRaw\": null,\n      \"spendingCapFormatted\": null,\n      \"hasSignedConfig\": true\n    },\n    {\n      \"token\": \"MUSD\",\n      \"domainIds\": [\n        11\n      ],\n      \"protocolIds\": [\n        2\n      ],\n      \"poolAddresses\": [\n        \"0xa7ada0d422a8b5fa4a7947f2cb0ee2d32435647d\"\n      ],\n      \"includeRewardsApy\": true,\n      \"lastRebalanceTimestamp\": null,\n      \"rebalanceFrequency\": 7,\n      \"totalGasFee\": \"0.00\",\n      \"totalDeposits\": \"0.00\",\n      \"totalWithdrawals\": \"0.00\",\n      \"requiredTvl\": \"0\",\n      \"requiredLiquidityMultiplier\": \"0\",\n      \"spendingCapRaw\": null,\n      \"spendingCapFormatted\": null,\n      \"hasSignedConfig\": false\n    },\n    {\n      \"token\": \"USDT\",\n      \"domainIds\": [\n        11,\n        11\n      ],\n      \"protocolIds\": [\n        0,\n        2\n      ],\n      \"poolAddresses\": [\n        \"0xc47b8c00b0f69a36fa203ffeac0334874574a8ac\",\n        \"0xcbef9be95738290188b25ca9a6dd2bec417a578c\"\n      ],\n      \"includeRewardsApy\": true,\n      \"lastRebalanceTimestamp\": null,\n      \"rebalanceFrequency\": 7,\n      \"totalGasFee\": \"0.00\",\n      \"totalDeposits\": \"0.00\",\n      \"totalWithdrawals\": \"0.00\",\n      \"requiredTvl\": \"0\",\n      \"requiredLiquidityMultiplier\": \"0\",\n      \"collateralExposure\": [\n        \"cbBTC\",\n        \"WETH\"\n      ],\n      \"spendingCapRaw\": null,\n      \"spendingCapFormatted\": null,\n      \"hasSignedConfig\": false\n    }\n  ]\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "f1261fdf-d943-46e8-873d-225630b39e1b",
+              "name": "Validation error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config",
+                    ":walletAddress"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "walletAddress",
+                      "description": "(Required) Ethereum wallet address"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"ILLEGAL_ARGUMENT_ERROR\",\n  \"internalCode\": \"BLANK_ADDRESS\",\n  \"message\": \"Wallet address cannot be blank\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "4ec44faf-4f1c-4e91-8898-b319f2ec64f1",
+              "name": "No authorization header provided",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config",
+                    ":walletAddress"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "walletAddress",
+                      "description": "(Required) Ethereum wallet address"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"AUTHENTICATION_FAILED\",\n  \"internalCode\": \"NO_AUTH_INFO\",\n  \"message\": \"No authentication information provided\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "bbbe47f1-aadb-49e3-b227-75565579cf17",
+              "name": "Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).\n\nResponse headers (when throttled):\n- `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).\n- `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).\n- `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).\n- `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.\n\n`internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config",
+                    ":walletAddress"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "walletAddress",
+                      "description": "(Required) Ethereum wallet address"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Seconds to wait before retrying this endpoint.",
+                  "key": "Retry-After",
+                  "value": "3"
+                },
+                {
+                  "disabled": false,
+                  "description": "Maximum number of requests allowed in the current window for this endpoint.",
+                  "key": "X-RateLimit-Limit",
+                  "value": "1"
+                },
+                {
+                  "disabled": false,
+                  "description": "Remaining requests in the current window.",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Unix timestamp (seconds) when the current limit window resets.",
+                  "key": "X-RateLimit-Reset",
+                  "value": "1713264123"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"RATE_LIMIT_EXCEEDED\",\n  \"internalCode\": \"THROTTLE_PER_IP\",\n  \"message\": \"Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": 3\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "831748d2-e9bc-4369-a93a-59cb439cbbad",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config",
+                    ":walletAddress"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "walletAddress",
+                      "description": "(Required) Ethereum wallet address"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"INTERNAL_ERROR\",\n  \"internalCode\": \"INTERNAL_ERROR\",\n  \"message\": \"An unexpected error occurred while processing your request\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "247eddf7-922b-427b-be8e-f8f2f482e381",
+          "name": "Get default configuration for token",
+          "request": {
+            "name": "Get default configuration for token",
+            "description": {
+              "content": "Retrieves the default pool configuration state for a specific token including domain IDs, protocol IDs, and pool contract addresses.\n\nThis endpoint returns the initial default configuration that shows how the system is set up for the specified token. The configuration includes:\n- **Domain IDs**: Cross-chain domain identifiers for the token\n- **Protocol IDs**: Identifiers of the supported DeFi protocols (e.g., Aave, Morpho, Euler)\n- **Pool Contracts**: Smart contract addresses for the respective pools\n- **Rebalancing Manager Address**: The address of the rebalancing manager contract\n\nThis represents the default state of the configuration, which can be used as a reference or starting point for rebalancing operations. Use this to compare against user's existing configuration.\n\n**Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v1",
+                "config",
+                "default",
+                ":token"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "token",
+                  "description": "(Required) Token symbol (uppercase)"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "6cddf347-0b3a-43e1-927e-9d7c5fe65157",
+              "name": "Default configuration retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config",
+                    "default",
+                    ":token"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "token",
+                      "description": "(Required) Token symbol (uppercase)"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"token\": \"USDT\",\n  \"rebalancingManagerAddress\": \"0x971ad06e6fde83b0265bd3ced5f5eaf30e269962\",\n  \"domainIds\": [\n    11,\n    11\n  ],\n  \"protocolIds\": [\n    0,\n    2\n  ],\n  \"poolAddresses\": [\n    \"0xc47b8c00b0f69a36fa203ffeac0334874574a8ac\",\n    \"0xcbef9be95738290188b25ca9a6dd2bec417a578c\"\n  ]\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "2e6c3662-6758-40a7-a91e-20c20b205a18",
+              "name": "Validation error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config",
+                    "default",
+                    ":token"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "token",
+                      "description": "(Required) Token symbol (uppercase)"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"ILLEGAL_ARGUMENT_ERROR\",\n  \"internalCode\": \"TOKEN_NOT_SUPPORTED\",\n  \"message\": \"Token 'RLUSD' is not supported. Supported tokens: USDC, MUSD, USDT\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "e8973542-1b1c-4220-8429-a7fafc4bf4a3",
+              "name": "No authorization header provided",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config",
+                    "default",
+                    ":token"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "token",
+                      "description": "(Required) Token symbol (uppercase)"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"AUTHENTICATION_FAILED\",\n  \"internalCode\": \"NO_AUTH_INFO\",\n  \"message\": \"No authentication information provided\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "700e036d-093b-4cf2-86bc-0c1961fdc082",
+              "name": "Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).\n\nResponse headers (when throttled):\n- `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).\n- `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).\n- `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).\n- `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.\n\n`internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config",
+                    "default",
+                    ":token"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "token",
+                      "description": "(Required) Token symbol (uppercase)"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Seconds to wait before retrying this endpoint.",
+                  "key": "Retry-After",
+                  "value": "3"
+                },
+                {
+                  "disabled": false,
+                  "description": "Maximum number of requests allowed in the current window for this endpoint.",
+                  "key": "X-RateLimit-Limit",
+                  "value": "1"
+                },
+                {
+                  "disabled": false,
+                  "description": "Remaining requests in the current window.",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Unix timestamp (seconds) when the current limit window resets.",
+                  "key": "X-RateLimit-Reset",
+                  "value": "1713264123"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"RATE_LIMIT_EXCEEDED\",\n  \"internalCode\": \"THROTTLE_PER_IP\",\n  \"message\": \"Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": 3\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "7525acd9-2b0f-4fbc-88ad-074bc49dd1be",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "config",
+                    "default",
+                    ":token"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "token",
+                      "description": "(Required) Token symbol (uppercase)"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"INTERNAL_ERROR\",\n  \"internalCode\": \"INTERNAL_ERROR\",\n  \"message\": \"An unexpected error occurred while processing your request\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "type": "string",
+      "value": "https://api.metalend.tech",
+      "key": "baseUrl"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}"
+      },
+      {
+        "key": "in",
+        "value": "header"
+      }
+    ]
+  },
+  "info": {
+    "_postman_id": "ed17b867-64b2-4321-abc2-87c589f42af1",
+    "name": "MetaLend Rebalancing AI Agent Guide User Configuration API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "API for managing cross-protocol cross-chain DeFi rebalancing operations exposing: <ul>\n  <li><b>Auth</b> – challenge/verify flow for JWT issuance.</li>\n  <li><b>Project settings</b> – fetch current project settings.</li>\n  <li><b>User configuration</b> – register or update token-level user-rebalancer settings and fetch current wallet configs.</li>\n  <li><b>Deposits</b> – create deposit intents, receive tracking IDs, and poll status through PROCESSING -> BRIDGING (cross-chain only) -> SUCCESS/FAILED/EMERGENCY_WITHDRAW. New deposits may return <b>503</b> with <b>DEPOSITS_PAUSED</b> during maintenance.</li>\n  <li><b>Withdrawals</b> – submit signed withdrawal requests, receive tracking IDs, and monitor status PROCESSING -> SUCCESS/FAILED.</li>\n  <li><b>Balances</b> – query wallet-level balances and withdraw details, as well as balances in bridge progress.</li>\n  <li><b>Rewards</b> – aggregated rewards and claim details per wallet.</li>\n  <li><b>Pools</b> – list supported protocols (Aave, Morpho, Euler, etc.), their pools, APY breakdowns, and TVL snapshots.</li>\n  <li><b>Transaction Costs</b> – current deposit/withdraw on-behalf transaction fees and minimum amounts by chain.</li>\n  <li><b>AI Agent Guide</b> – Markdown flow guide at <code>/SKILL.md</code> with signing formats, wizard requirements, and known integration gotchas.</li>\n</ul> All endpoints require an <b>X-API-Key</b>. <b>JWT authentication</b> is required on <b>deposit, withdrawal, and config update</b> operations.\n<b>Obtain API key by <a href=\"https://developer.metalend.tech/\" target=\"_blank\" rel=\"noopener noreferrer\">creating a new project</a>.</b>\nAll requests must include the Origin header. Use Origin: https://app.metalend.tech unless you have been assigned a different allowed origin.\n\nContact Support:\n Name: MetaLend API Support\n Email: support@metalend.tech",
+      "type": "text/plain"
+    }
+  }
+}

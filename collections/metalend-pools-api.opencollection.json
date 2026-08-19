@@ -1,0 +1,37 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "MetaLend Rebalancing AI Agent Guide Pools API",
+    "version": "0.1.0"
+  },
+  "request": {
+    "auth": {
+      "type": "apikey",
+      "key": "X-API-Key",
+      "value": "{{X-API-Key}}",
+      "placement": "header"
+    }
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Pools",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get pools information",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/v1/pools"
+          },
+          "docs": "Retrieves comprehensive information about supported DeFi protocols, pools, Total Value Locked (TVL), and Annual Percentage Yield (APY) data on supported networks.<br><br>\n\nThe response is a flat list of pools across supported protocols (Aave, Morpho, Euler) and tokens (USDC, MUSD, USDT, RLUSD). Each pool includes protocol metadata, pool address/name, underlying token details, TVL, liquidity, collateral exposure, APY breakdowns, signing metadata, and blacklist status.<br><br>\n\n**APY Information**"
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

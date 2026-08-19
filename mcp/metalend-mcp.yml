@@ -2,59 +2,63 @@ generated: '2026-07-20'
 method: derived
 status: candidate
 source: openapi/metalend-rebalancing-openapi.json
-note: >-
-  No official hosted MCP server was found for MetaLend. This is a CANDIDATE tool
-  list derived one-to-one from the OpenAPI operations. The API is already
-  agent-native (it serves an AI agent flow guide at GET /SKILL.md, carries
-  x-agent-hint auth guidance, and gates some resources behind x402 agentic
-  payments), so it is a strong candidate for an MCP wrapper.
+note: No official hosted MCP server was found for MetaLend. This is a CANDIDATE tool list derived one-to-one
+  from the OpenAPI operations. The API is already agent-native (it serves an AI agent flow guide at GET
+  /SKILL.md, carries x-agent-hint auth guidance, and gates some resources behind x402 agentic payments),
+  so it is a strong candidate for an MCP wrapper.
 server:
   name: metalend
   transport: http
   url: null
 tools:
-  - name: get_skill_guide
-    description: Fetch the AI agent flow guide (signing formats, wizard, gotchas).
-    source_operation: openapi/metalend-rebalancing-openapi.json#getSkillMd
-  - name: create_auth_challenge
-    description: Create a SIWE wallet challenge to sign.
-    source_operation: openapi/metalend-rebalancing-openapi.json#createAuthChallenge
-  - name: verify_auth_challenge
-    description: Verify a signed SIWE challenge and receive a JWT.
-    source_operation: openapi/metalend-rebalancing-openapi.json#verifyAuthChallenge
-  - name: get_pools
-    description: List supported pools with APY breakdowns and sign data.
-    source_operation: openapi/metalend-rebalancing-openapi.json#getPools
-  - name: get_config
-    description: Get the rebalancer configuration for a wallet.
-    source_operation: openapi/metalend-rebalancing-openapi.json#getConfig
-  - name: get_default_config
-    description: Get the default rebalancer configuration for a token.
-    source_operation: openapi/metalend-rebalancing-openapi.json#getDefaultConfig
-  - name: update_config
-    description: Register or update token-level rebalancer settings (signed).
-    source_operation: openapi/metalend-rebalancing-openapi.json#updateConfig
-  - name: get_rebalancer_balances
-    description: Get deployed balances plus withdraw request data per pool.
-    source_operation: openapi/metalend-rebalancing-openapi.json#getRebalancerBalances
-  - name: get_bridge_balances
-    description: Get balances in bridge progress for a wallet.
-    source_operation: openapi/metalend-rebalancing-openapi.json#getBridgeBalances
-  - name: create_deposit
-    description: Create a deposit intent (signed or approval-based).
-    source_operation: openapi/metalend-rebalancing-openapi.json#createDeposit
-  - name: get_deposit_status
-    description: Poll deposit status by tracking ID.
-    source_operation: openapi/metalend-rebalancing-openapi.json#getDepositStatus
-  - name: create_withdrawal
-    description: Submit a signed withdrawal request.
-    source_operation: openapi/metalend-rebalancing-openapi.json#createWithdrawal
-  - name: get_withdrawal_version
-    description: Get the withdrawal contract version.
-    source_operation: openapi/metalend-rebalancing-openapi.json#getWithdrawalVersion
-  - name: get_rewards
-    description: Get aggregated rewards and claim details for a wallet.
-    source_operation: openapi/metalend-rebalancing-openapi.json#getRewards
-  - name: get_transaction_costs
-    description: Get per-chain deposit/withdraw fees and minimum amounts for a token.
-    source_operation: openapi/metalend-rebalancing-openapi.json#getTransactionCosts
+- name: get_skill_guide
+  description: Fetch the AI agent flow guide (signing formats, wizard, gotchas).
+  source_operation: openapi/metalend-rebalancing-openapi.json#getSkillMd
+- name: create_auth_challenge
+  description: Create a SIWE wallet challenge to sign.
+  source_operation: openapi/metalend-rebalancing-openapi.json#createAuthChallenge
+- name: verify_auth_challenge
+  description: Verify a signed SIWE challenge and receive a JWT.
+  source_operation: openapi/metalend-rebalancing-openapi.json#verifyAuthChallenge
+- name: get_pools
+  description: List supported pools with APY breakdowns and sign data.
+  source_operation: openapi/metalend-rebalancing-openapi.json#getPools
+- name: get_config
+  description: Get the rebalancer configuration for a wallet.
+  source_operation: openapi/metalend-rebalancing-openapi.json#getConfig
+- name: get_default_config
+  description: Get the default rebalancer configuration for a token.
+  source_operation: openapi/metalend-rebalancing-openapi.json#getDefaultConfig
+- name: update_config
+  description: Register or update token-level rebalancer settings (signed).
+  source_operation: openapi/metalend-rebalancing-openapi.json#updateConfig
+- name: get_rebalancer_balances
+  description: Get deployed balances plus withdraw request data per pool.
+  source_operation: openapi/metalend-rebalancing-openapi.json#getRebalancerBalances
+- name: get_bridge_balances
+  description: Get balances in bridge progress for a wallet.
+  source_operation: openapi/metalend-rebalancing-openapi.json#getBridgeBalances
+- name: create_deposit
+  description: Create a deposit intent (signed or approval-based).
+  source_operation: openapi/metalend-rebalancing-openapi.json#createDeposit
+- name: get_deposit_status
+  description: Poll deposit status by tracking ID.
+  source_operation: openapi/metalend-rebalancing-openapi.json#getDepositStatus
+- name: create_withdrawal
+  description: Submit a signed withdrawal request.
+  source_operation: openapi/metalend-rebalancing-openapi.json#createWithdrawal
+- name: get_withdrawal_version
+  description: Get the withdrawal contract version.
+  source_operation: openapi/metalend-rebalancing-openapi.json#getWithdrawalVersion
+- name: get_rewards
+  description: Get aggregated rewards and claim details for a wallet.
+  source_operation: openapi/metalend-rebalancing-openapi.json#getRewards
+- name: get_transaction_costs
+  description: Get per-chain deposit/withdraw fees and minimum amounts for a token.
+  source_operation: openapi/metalend-rebalancing-openapi.json#getTransactionCosts
+deployment:
+  mode: none
+  verified: derived
+  tools: 15
+  checked: '2026-08-12'
+  source: catalog MCP census

@@ -1,0 +1,72 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "MetaLend Rebalancing AI Agent Guide Deposits API",
+    "version": "0.1.0"
+  },
+  "request": {
+    "auth": {
+      "type": "apikey",
+      "key": "X-API-Key",
+      "value": "{{X-API-Key}}",
+      "placement": "header"
+    }
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Deposits",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Create a deposit",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.metalend.tech/v1/deposits",
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "apikey",
+              "key": "X-API-Key",
+              "value": "{{X-API-Key}}",
+              "placement": "header"
+            }
+          },
+          "docs": "Initiates a deposit transaction to move funds into an optimal DeFi protocol.<br><br>\nUser owned **rebalancer contract** must be pre-approved to spend tokens. The address of this contract is returned by the `GET /v1/config/{walletAddress}` endpoint. This contract gets deployed during first deposit and its address is pre-computed using CREATE2.<br><br>\nBoth **signature-based (gasless)** and **approval-based** approvals are supported.<br><br>\nActual deposit transaction is executed by an operator on"
+        },
+        {
+          "info": {
+            "name": "Get deposit status",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/v1/deposits/:trackingId",
+            "params": [
+              {
+                "name": "trackingId",
+                "value": "550e8400-e29b-41d4-a716-446655440000",
+                "type": "path",
+                "description": "Tracking ID (UUID) returned from deposit creation"
+              }
+            ],
+            "auth": {
+              "type": "apikey",
+              "key": "X-API-Key",
+              "value": "{{X-API-Key}}",
+              "placement": "header"
+            }
+          },
+          "docs": "Retrieves the current status and details of a deposit transaction using its unique tracking ID.\n\nThis endpoint allows you to monitor the progress of a deposit from initiation to completion. \nThe tracking ID is returned when you create a deposit in UUID format.\n\nPlease be aware that if you see failed state, it can be also due to high gas fees, max allowed is 1 USD in gas fees, otherwise it will fail.\n\n**Status Values** (returned in `status`):\n- `PROCESSING`: Deposit is queued or being handled on "
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

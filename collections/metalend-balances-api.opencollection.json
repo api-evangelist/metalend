@@ -1,0 +1,70 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "MetaLend Rebalancing AI Agent Guide Balances API",
+    "version": "0.1.0"
+  },
+  "request": {
+    "auth": {
+      "type": "apikey",
+      "key": "X-API-Key",
+      "value": "{{X-API-Key}}",
+      "placement": "header"
+    }
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Balances",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get rebalancer balances",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/v1/balances/:walletAddress",
+            "params": [
+              {
+                "name": "walletAddress",
+                "value": "0x1234567890123456789012345678901234567890",
+                "type": "path",
+                "description": "User's Ethereum wallet address"
+              },
+              {
+                "name": "tokens",
+                "value": "USDC,MUSD,USDT",
+                "type": "query",
+                "description": "Comma-separated list of token symbols to query"
+              }
+            ]
+          },
+          "docs": "Retrieves detailed balance information across all protocols and pools for a wallet address. This endpoint provides comprehensive financial data including token balances, net earnings, aggregate APY, and per-protocol/per-pool breakdowns.<br><br>\n\n**Authentication**: Requires a valid API key. The wallet address must be a valid checksummed EOA address.<br><br>\n\n**Token Filtering**: The optional `tokens` query parameter accepts a comma-separated list of token symbols (e.g., `USDC,MUSD,USDT`). If not"
+        },
+        {
+          "info": {
+            "name": "Get bridge balances",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/v1/balances/bridge/:walletAddress",
+            "params": [
+              {
+                "name": "walletAddress",
+                "value": "0x1234567890123456789012345678901234567890",
+                "type": "path",
+                "description": "User's Ethereum wallet address"
+              }
+            ]
+          },
+          "docs": "Retrieves bridge balances for the specified wallet address.\n\n**Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n"
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

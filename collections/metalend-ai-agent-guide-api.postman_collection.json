@@ -1,0 +1,237 @@
+{
+  "item": [
+    {
+      "id": "ad050475-7ca4-4723-856d-99e9c2e4d197",
+      "name": "AI Agent Guide",
+      "description": {
+        "content": "Machine-readable flow guide for AI agents — signing formats, wizard flows, and integration gotchas",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "b39be98e-9833-4f50-b214-c16927bc499a",
+          "name": "Get the AI agent flow guide",
+          "request": {
+            "name": "Get the AI agent flow guide",
+            "description": {
+              "content": "Returns the MetaLend AI Agent Flow Guide — a comprehensive reference for AI agents covering authentication flows, signing formats, config wizard, deposit/withdrawal patterns, and known failure modes. **AI agents must fetch this document before implementing any MetaLend operation.\n\nThe guide is returned as `text/markdown` and is rate limited to 20 requests per 60 seconds per IP.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "SKILL.md"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/markdown"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "ac95b1de-1055-4541-a14a-407254cf5868",
+              "name": "Markdown guide for AI agents integrating with the MetaLend Rebalancing API.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "SKILL.md"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "text/markdown"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/markdown"
+                }
+              ],
+              "body": "# MetaLend API — AI Agent Flow Guide\n\n> **Config Wizard Notice:** When a user wants to configure their rebalancer (set pools/tokens), you MUST run an interactive wizard before signing.\n\nThis document captures the exact flows, signing formats, and gotchas for an AI agent operating the MetaLend Rebalancing API (`http://api.metalend.tech`).\n",
+              "cookie": [],
+              "_postman_previewlanguage": "text"
+            },
+            {
+              "id": "9a55f3e3-f67e-4b53-a48b-1925d355b24b",
+              "name": "Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).\n\nResponse headers (when throttled):\n- `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).\n- `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).\n- `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).\n- `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.\n\n`internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "SKILL.md"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Seconds to wait before retrying this endpoint.",
+                  "key": "Retry-After",
+                  "value": "3"
+                },
+                {
+                  "disabled": false,
+                  "description": "Maximum number of requests allowed in the current window for this endpoint.",
+                  "key": "X-RateLimit-Limit",
+                  "value": "1"
+                },
+                {
+                  "disabled": false,
+                  "description": "Remaining requests in the current window.",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Unix timestamp (seconds) when the current limit window resets.",
+                  "key": "X-RateLimit-Reset",
+                  "value": "1713264123"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"RATE_LIMIT_EXCEEDED\",\n  \"internalCode\": \"THROTTLE_PER_IP\",\n  \"message\": \"Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": 3\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "4abe7eef-e3a7-4b75-a335-b7693e19c2f8",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "SKILL.md"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"INTERNAL_ERROR\",\n  \"internalCode\": \"INTERNAL_ERROR\",\n  \"message\": \"An unexpected error occurred while processing your request\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "type": "string",
+      "value": "https://api.metalend.tech",
+      "key": "baseUrl"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}"
+      },
+      {
+        "key": "in",
+        "value": "header"
+      }
+    ]
+  },
+  "info": {
+    "_postman_id": "80b985e9-8db7-4f0b-b4a3-2872d57a8b62",
+    "name": "MetaLend Rebalancing AI Agent Guide API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "API for managing cross-protocol cross-chain DeFi rebalancing operations exposing: <ul>\n  <li><b>Auth</b> – challenge/verify flow for JWT issuance.</li>\n  <li><b>Project settings</b> – fetch current project settings.</li>\n  <li><b>User configuration</b> – register or update token-level user-rebalancer settings and fetch current wallet configs.</li>\n  <li><b>Deposits</b> – create deposit intents, receive tracking IDs, and poll status through PROCESSING -> BRIDGING (cross-chain only) -> SUCCESS/FAILED/EMERGENCY_WITHDRAW. New deposits may return <b>503</b> with <b>DEPOSITS_PAUSED</b> during maintenance.</li>\n  <li><b>Withdrawals</b> – submit signed withdrawal requests, receive tracking IDs, and monitor status PROCESSING -> SUCCESS/FAILED.</li>\n  <li><b>Balances</b> – query wallet-level balances and withdraw details, as well as balances in bridge progress.</li>\n  <li><b>Rewards</b> – aggregated rewards and claim details per wallet.</li>\n  <li><b>Pools</b> – list supported protocols (Aave, Morpho, Euler, etc.), their pools, APY breakdowns, and TVL snapshots.</li>\n  <li><b>Transaction Costs</b> – current deposit/withdraw on-behalf transaction fees and minimum amounts by chain.</li>\n  <li><b>AI Agent Guide</b> – Markdown flow guide at <code>/SKILL.md</code> with signing formats, wizard requirements, and known integration gotchas.</li>\n</ul> All endpoints require an <b>X-API-Key</b>. <b>JWT authentication</b> is required on <b>deposit, withdrawal, and config update</b> operations.\n<b>Obtain API key by <a href=\"https://developer.metalend.tech/\" target=\"_blank\" rel=\"noopener noreferrer\">creating a new project</a>.</b>\nAll requests must include the Origin header. Use Origin: https://app.metalend.tech unless you have been assigned a different allowed origin.\n\nContact Support:\n Name: MetaLend API Support\n Email: support@metalend.tech",
+      "type": "text/plain"
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "MetaLend Rebalancing AI Agent Guide User Configuration API",
+    "version": "0.1.0"
+  },
+  "request": {
+    "auth": {
+      "type": "apikey",
+      "key": "X-API-Key",
+      "value": "{{X-API-Key}}",
+      "placement": "header"
+    }
+  },
+  "items": [
+    {
+      "info": {
+        "name": "User Configuration",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Update rebalancer configuration",
+            "type": "http"
+          },
+          "http": {
+            "method": "PUT",
+            "url": "https://api.metalend.tech/v1/config",
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "apikey",
+              "key": "X-API-Key",
+              "value": "{{X-API-Key}}",
+              "placement": "header"
+            }
+          },
+          "docs": "Creates or updates the rebalancing configuration for a specific wallet address and token. This endpoint allows users to set custom protocols and pools for automated rebalancing of their funds.\n\n**Authentication**: Requires a valid JWT token. The wallet address in the JWT must match the `walletAddress` field in the request body.\n\n**Configuration per Token**: Each request configures one specific token (USDC, MUSD, or USDT, RLUSD). To configure multiple tokens, make separate PUT requests for each t"
+        },
+        {
+          "info": {
+            "name": "Get rebalancer configuration",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/v1/config/:walletAddress",
+            "params": [
+              {
+                "name": "walletAddress",
+                "value": "0x1234567890123456789012345678901234567890",
+                "type": "path",
+                "description": "Ethereum wallet address"
+              }
+            ]
+          },
+          "docs": "Retrieves the current rebalancing configuration state for a specific wallet address across all supported tokens.\n\nThis endpoint returns configurations for each supported token, including:\n- **Rebalancer Address**: The smart contract address of the user's rebalancer\n- **Rebalancing Manager Address**: The address of the rebalancing manager contract\n- **Configurations**: List of configuration items, one per supported token, each containing:\n  - Token information\n  - Domain IDs, Protocol IDs, and Po"
+        },
+        {
+          "info": {
+            "name": "Get default configuration for token",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.metalend.tech/v1/config/default/:token",
+            "params": [
+              {
+                "name": "token",
+                "value": "USDC",
+                "type": "path",
+                "description": "Token symbol (uppercase)"
+              }
+            ]
+          },
+          "docs": "Retrieves the default pool configuration state for a specific token including domain IDs, protocol IDs, and pool contract addresses.\n\nThis endpoint returns the initial default configuration that shows how the system is set up for the specified token. The configuration includes:\n- **Domain IDs**: Cross-chain domain identifiers for the token\n- **Protocol IDs**: Identifiers of the supported DeFi protocols (e.g., Aave, Morpho, Euler)\n- **Pool Contracts**: Smart contract addresses for the respective "
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

@@ -1,0 +1,415 @@
+{
+  "item": [
+    {
+      "id": "766952e9-3cf6-4df9-9d0f-d7777be2fd4f",
+      "name": "Rewards",
+      "description": {
+        "content": "Reward aggregation and claim data",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "e1066c07-a018-424a-9159-a1094b2d21a9",
+          "name": "Get rewards",
+          "request": {
+            "name": "Get rewards",
+            "description": {
+              "content": "Retrieves aggregated rewards data for the specified wallet address across \nsupported reward sources (currently Merkle-based rewards).\n\nAfter a successful claim on a specific chain, pass `reloadChain` with the human-readable chain name (e.g. `base`, `arbitrum`) to force a Merkl cache refresh for that chain.\n\n**How to claim rewards — the `claimTransaction` is pre-built, just send it.**\n\nEach `RewardItem` with claimable rewards includes a non-null `claimTransaction` \nfield. The backend has already constructed the full ABI-encoded calldata for the \n`claimRewards(address,address[],uint256[],bytes32[][])` function — including the \ndistributor address, token addresses, amounts, and merkle proofs.\n\nTo execute the claim, send a transaction from the user's wallet with exactly \nthese values:\n- `to`: `claimTransaction.to` — the rewards distributor contract address\n- `data`: `claimTransaction.calldata` — fully encoded, ready to submit as-is\n- `chainId`: `claimTransaction.chainId` — the chain to send it on\n\n**You do NOT need to encode anything yourself.** Do not use `params`, `abi`, or \n`method` to construct the calldata — those are informational only. Use `calldata` \ndirectly as the transaction `data` field.\n\nExample (viem):\nawait walletClient.sendTransaction({\n  to: claimTransaction.to,\n  data: claimTransaction.calldata,\n  chainId: claimTransaction.chainId,\n})\n\n**Rate limiting**: 1 request per 3 seconds per client IP. Excess requests receive HTTP `429` with `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (see `RateLimitExceeded` response).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v1",
+                "rewards",
+                ":walletAddress"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "disabled": false,
+                  "key": "reloadChain",
+                  "value": "<string>",
+                  "description": "After claiming rewards on a specific chain, pass the chain name to force Merkl cache refresh for that chain. Omit for normal cached fetch.\n"
+                }
+              ],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "walletAddress",
+                  "description": "(Required) User's Ethereum wallet address"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "3934b7d0-6a8d-4423-b9ad-c4b7ce0a8c39",
+              "name": "Rewards retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "rewards",
+                    ":walletAddress"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "reloadChain",
+                      "value": "base"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "walletAddress",
+                      "description": "(Required) User's Ethereum wallet address"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"walletAddress\": \"string\",\n  \"timestamp\": \"string\",\n  \"totalClaimedUsd\": \"string\",\n  \"totalAvailableUsd\": \"string\",\n  \"rewards\": [\n    {\n      \"source\": \"string\",\n      \"rewardItems\": [\n        {\n          \"token\": {\n            \"symbol\": \"USDC\",\n            \"name\": \"USD Coin\",\n            \"address\": \"0x1234567890123456789012345678901234567890\",\n            \"decimals\": 6,\n            \"version\": \"string\"\n          },\n          \"chain\": {\n            \"id\": 5520,\n            \"name\": \"string\",\n            \"icon\": \"string\",\n            \"endOfDisputePeriod\": 9126,\n            \"explorers\": [\n              {\n                \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n              },\n              {\n                \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n              }\n            ]\n          },\n          \"claimedRaw\": \"string\",\n          \"claimedFormatted\": \"string\",\n          \"amount\": \"string\",\n          \"claimedUsd\": \"string\",\n          \"pendingRaw\": \"string\",\n          \"pendingFormatted\": \"string\",\n          \"availableRaw\": \"string\",\n          \"availableFormatted\": \"string\",\n          \"availableUsd\": \"string\",\n          \"distributorAddress\": \"string\",\n          \"proof\": [\n            \"string\",\n            \"string\"\n          ],\n          \"vestingInfo\": {\n            \"totalAllocatedRaw\": \"string\",\n            \"totalAllocatedFormatted\": \"string\",\n            \"unlockedRaw\": \"string\",\n            \"unlockedFormatted\": \"string\",\n            \"lockedRaw\": \"string\",\n            \"lockedFormatted\": \"string\",\n            \"vestingStartTime\": 9065,\n            \"vestingEndTime\": 146,\n            \"vestingDuration\": 194,\n            \"vestingGranularity\": 6768,\n            \"initialUnlockBps\": 9407,\n            \"bpsDenominator\": 8858,\n            \"progressPercentage\": \"string\",\n            \"daysElapsed\": 7692,\n            \"daysTotal\": 9466,\n            \"stepsCompleted\": 3151,\n            \"stepsTotal\": 3763\n          },\n          \"claimTransaction\": {\n            \"to\": \"string\",\n            \"chainId\": 9923,\n            \"chain\": \"string\",\n            \"method\": \"string\",\n            \"params\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"abi\": \"string\",\n            \"calldata\": \"string\"\n          }\n        },\n        {\n          \"token\": {\n            \"symbol\": \"USDC\",\n            \"name\": \"USD Coin\",\n            \"address\": \"0x1234567890123456789012345678901234567890\",\n            \"decimals\": 6,\n            \"version\": \"string\"\n          },\n          \"chain\": {\n            \"id\": 8228,\n            \"name\": \"string\",\n            \"icon\": \"string\",\n            \"endOfDisputePeriod\": 2002,\n            \"explorers\": [\n              {\n                \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n              },\n              {\n                \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n              }\n            ]\n          },\n          \"claimedRaw\": \"string\",\n          \"claimedFormatted\": \"string\",\n          \"amount\": \"string\",\n          \"claimedUsd\": \"string\",\n          \"pendingRaw\": \"string\",\n          \"pendingFormatted\": \"string\",\n          \"availableRaw\": \"string\",\n          \"availableFormatted\": \"string\",\n          \"availableUsd\": \"string\",\n          \"distributorAddress\": \"string\",\n          \"proof\": [\n            \"string\",\n            \"string\"\n          ],\n          \"vestingInfo\": {\n            \"totalAllocatedRaw\": \"string\",\n            \"totalAllocatedFormatted\": \"string\",\n            \"unlockedRaw\": \"string\",\n            \"unlockedFormatted\": \"string\",\n            \"lockedRaw\": \"string\",\n            \"lockedFormatted\": \"string\",\n            \"vestingStartTime\": 4861,\n            \"vestingEndTime\": 2565,\n            \"vestingDuration\": 5223,\n            \"vestingGranularity\": 8871,\n            \"initialUnlockBps\": 2265,\n            \"bpsDenominator\": 3141,\n            \"progressPercentage\": \"string\",\n            \"daysElapsed\": 285,\n            \"daysTotal\": 4127,\n            \"stepsCompleted\": 5465,\n            \"stepsTotal\": 4777\n          },\n          \"claimTransaction\": {\n            \"to\": \"string\",\n            \"chainId\": 3377,\n            \"chain\": \"string\",\n            \"method\": \"string\",\n            \"params\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"abi\": \"string\",\n            \"calldata\": \"string\"\n          }\n        }\n      ]\n    },\n    {\n      \"source\": \"string\",\n      \"rewardItems\": [\n        {\n          \"token\": {\n            \"symbol\": \"USDC\",\n            \"name\": \"USD Coin\",\n            \"address\": \"0x1234567890123456789012345678901234567890\",\n            \"decimals\": 6,\n            \"version\": \"string\"\n          },\n          \"chain\": {\n            \"id\": 9775,\n            \"name\": \"string\",\n            \"icon\": \"string\",\n            \"endOfDisputePeriod\": 6557,\n            \"explorers\": [\n              {\n                \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n              },\n              {\n                \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n              }\n            ]\n          },\n          \"claimedRaw\": \"string\",\n          \"claimedFormatted\": \"string\",\n          \"amount\": \"string\",\n          \"claimedUsd\": \"string\",\n          \"pendingRaw\": \"string\",\n          \"pendingFormatted\": \"string\",\n          \"availableRaw\": \"string\",\n          \"availableFormatted\": \"string\",\n          \"availableUsd\": \"string\",\n          \"distributorAddress\": \"string\",\n          \"proof\": [\n            \"string\",\n            \"string\"\n          ],\n          \"vestingInfo\": {\n            \"totalAllocatedRaw\": \"string\",\n            \"totalAllocatedFormatted\": \"string\",\n            \"unlockedRaw\": \"string\",\n            \"unlockedFormatted\": \"string\",\n            \"lockedRaw\": \"string\",\n            \"lockedFormatted\": \"string\",\n            \"vestingStartTime\": 397,\n            \"vestingEndTime\": 4106,\n            \"vestingDuration\": 2877,\n            \"vestingGranularity\": 9588,\n            \"initialUnlockBps\": 147,\n            \"bpsDenominator\": 7648,\n            \"progressPercentage\": \"string\",\n            \"daysElapsed\": 4529,\n            \"daysTotal\": 1605,\n            \"stepsCompleted\": 5715,\n            \"stepsTotal\": 6056\n          },\n          \"claimTransaction\": {\n            \"to\": \"string\",\n            \"chainId\": 2594,\n            \"chain\": \"string\",\n            \"method\": \"string\",\n            \"params\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"abi\": \"string\",\n            \"calldata\": \"string\"\n          }\n        },\n        {\n          \"token\": {\n            \"symbol\": \"USDC\",\n            \"name\": \"USD Coin\",\n            \"address\": \"0x1234567890123456789012345678901234567890\",\n            \"decimals\": 6,\n            \"version\": \"string\"\n          },\n          \"chain\": {\n            \"id\": 852,\n            \"name\": \"string\",\n            \"icon\": \"string\",\n            \"endOfDisputePeriod\": 7548,\n            \"explorers\": [\n              {\n                \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n              },\n              {\n                \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n              }\n            ]\n          },\n          \"claimedRaw\": \"string\",\n          \"claimedFormatted\": \"string\",\n          \"amount\": \"string\",\n          \"claimedUsd\": \"string\",\n          \"pendingRaw\": \"string\",\n          \"pendingFormatted\": \"string\",\n          \"availableRaw\": \"string\",\n          \"availableFormatted\": \"string\",\n          \"availableUsd\": \"string\",\n          \"distributorAddress\": \"string\",\n          \"proof\": [\n            \"string\",\n            \"string\"\n          ],\n          \"vestingInfo\": {\n            \"totalAllocatedRaw\": \"string\",\n            \"totalAllocatedFormatted\": \"string\",\n            \"unlockedRaw\": \"string\",\n            \"unlockedFormatted\": \"string\",\n            \"lockedRaw\": \"string\",\n            \"lockedFormatted\": \"string\",\n            \"vestingStartTime\": 323,\n            \"vestingEndTime\": 3456,\n            \"vestingDuration\": 5816,\n            \"vestingGranularity\": 6503,\n            \"initialUnlockBps\": 5368,\n            \"bpsDenominator\": 1044,\n            \"progressPercentage\": \"string\",\n            \"daysElapsed\": 6080,\n            \"daysTotal\": 7544,\n            \"stepsCompleted\": 3622,\n            \"stepsTotal\": 3556\n          },\n          \"claimTransaction\": {\n            \"to\": \"string\",\n            \"chainId\": 2796,\n            \"chain\": \"string\",\n            \"method\": \"string\",\n            \"params\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"abi\": \"string\",\n            \"calldata\": \"string\"\n          }\n        }\n      ]\n    }\n  ]\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "3ba7d28d-8d7e-4245-8b5a-bfef964e65d2",
+              "name": "Validation error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "rewards",
+                    ":walletAddress"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "reloadChain",
+                      "value": "base"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "walletAddress",
+                      "description": "(Required) User's Ethereum wallet address"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"ILLEGAL_ARGUMENT_ERROR\",\n  \"internalCode\": \"BLANK_ADDRESS\",\n  \"message\": \"Wallet address cannot be blank\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "8b6c0587-aab4-4c7d-a3f2-1d57b30b664e",
+              "name": "No authorization header provided",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "rewards",
+                    ":walletAddress"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "reloadChain",
+                      "value": "base"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "walletAddress",
+                      "description": "(Required) User's Ethereum wallet address"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"AUTHENTICATION_FAILED\",\n  \"internalCode\": \"NO_AUTH_INFO\",\n  \"message\": \"No authentication information provided\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "90eebeb8-5b32-4823-b6e9-5e7c3a08c326",
+              "name": "Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).\n\nResponse headers (when throttled):\n- `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).\n- `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).\n- `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).\n- `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.\n\n`internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "rewards",
+                    ":walletAddress"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "reloadChain",
+                      "value": "base"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "walletAddress",
+                      "description": "(Required) User's Ethereum wallet address"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Seconds to wait before retrying this endpoint.",
+                  "key": "Retry-After",
+                  "value": "3"
+                },
+                {
+                  "disabled": false,
+                  "description": "Maximum number of requests allowed in the current window for this endpoint.",
+                  "key": "X-RateLimit-Limit",
+                  "value": "1"
+                },
+                {
+                  "disabled": false,
+                  "description": "Remaining requests in the current window.",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Unix timestamp (seconds) when the current limit window resets.",
+                  "key": "X-RateLimit-Reset",
+                  "value": "1713264123"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"RATE_LIMIT_EXCEEDED\",\n  \"internalCode\": \"THROTTLE_PER_IP\",\n  \"message\": \"Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": 3\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "f9436e16-6495-4096-9da1-e81605d403c0",
+              "name": "Internal error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v1",
+                    "rewards",
+                    ":walletAddress"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "reloadChain",
+                      "value": "base"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "walletAddress",
+                      "description": "(Required) User's Ethereum wallet address"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: apikey",
+                      "type": "text/plain"
+                    },
+                    "key": "X-API-Key",
+                    "value": "<API Key>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"INTERNAL_ERROR\",\n  \"internalCode\": \"USER_DOES_NOT_EXIST\",\n  \"message\": \"User does not exist for wallet address '0x1234567890123456789012345678901234567890'\",\n  \"requestId\": \"2c2f3dc1-d19a-49cb-b695-37d025e551b3\",\n  \"retryAfterSeconds\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "type": "string",
+      "value": "https://api.metalend.tech",
+      "key": "baseUrl"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}"
+      },
+      {
+        "key": "in",
+        "value": "header"
+      }
+    ]
+  },
+  "info": {
+    "_postman_id": "876d1710-7d05-4050-9efd-910cd13b0dd7",
+    "name": "MetaLend Rebalancing AI Agent Guide Rewards API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "API for managing cross-protocol cross-chain DeFi rebalancing operations exposing: <ul>\n  <li><b>Auth</b> – challenge/verify flow for JWT issuance.</li>\n  <li><b>Project settings</b> – fetch current project settings.</li>\n  <li><b>User configuration</b> – register or update token-level user-rebalancer settings and fetch current wallet configs.</li>\n  <li><b>Deposits</b> – create deposit intents, receive tracking IDs, and poll status through PROCESSING -> BRIDGING (cross-chain only) -> SUCCESS/FAILED/EMERGENCY_WITHDRAW. New deposits may return <b>503</b> with <b>DEPOSITS_PAUSED</b> during maintenance.</li>\n  <li><b>Withdrawals</b> – submit signed withdrawal requests, receive tracking IDs, and monitor status PROCESSING -> SUCCESS/FAILED.</li>\n  <li><b>Balances</b> – query wallet-level balances and withdraw details, as well as balances in bridge progress.</li>\n  <li><b>Rewards</b> – aggregated rewards and claim details per wallet.</li>\n  <li><b>Pools</b> – list supported protocols (Aave, Morpho, Euler, etc.), their pools, APY breakdowns, and TVL snapshots.</li>\n  <li><b>Transaction Costs</b> – current deposit/withdraw on-behalf transaction fees and minimum amounts by chain.</li>\n  <li><b>AI Agent Guide</b> – Markdown flow guide at <code>/SKILL.md</code> with signing formats, wizard requirements, and known integration gotchas.</li>\n</ul> All endpoints require an <b>X-API-Key</b>. <b>JWT authentication</b> is required on <b>deposit, withdrawal, and config update</b> operations.\n<b>Obtain API key by <a href=\"https://developer.metalend.tech/\" target=\"_blank\" rel=\"noopener noreferrer\">creating a new project</a>.</b>\nAll requests must include the Origin header. Use Origin: https://app.metalend.tech unless you have been assigned a different allowed origin.\n\nContact Support:\n Name: MetaLend API Support\n Email: support@metalend.tech",
+      "type": "text/plain"
+    }
+  }
+}

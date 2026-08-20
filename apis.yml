@@ -42,6 +42,18 @@ tags:
 - Web3
 - Stablecoins
 - Payments
+- agent-native
+- Blockchain
+tags_raw:
+- Company
+- Crypto
+- DeFi
+- Lending
+- Yield
+- Rebalancing
+- Web3
+- Stablecoins
+- Payments
 - Agent Native
 - Blockchain
 maintainers:
@@ -75,6 +87,8 @@ apis:
   humanURL: https://developer.metalend.tech
   baseURL: https://api.metalend.tech
   tags:
+  - Authentication
+  tags_raw:
   - Auth
   properties:
   - type: OpenAPI

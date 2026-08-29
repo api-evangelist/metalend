@@ -10,6 +10,18 @@ description: >-
   wallet signing, and gates its services directory behind an x402 (HTTP 402) micropayment in
   USDC on Base. Smart contracts are audited by Sherlock. Backed by Pantera Capital.
 url: https://raw.githubusercontent.com/api-evangelist/metalend/refs/heads/main/apis.yml
+deliveryModel:
+  model: saas
+  open_source: false
+  commercial: true
+  callable_host: true
+  label: Hosted service · you call their endpoint
+  confidence: high
+  source:
+  - openapi
+  - pricing
+  generated: '2026-08-28'
+  method: derived
 accessModel:
   pricing: unknown
   onboarding: self-serve

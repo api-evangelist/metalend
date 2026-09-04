@@ -24,15 +24,17 @@ deliveryModel:
   method: derived
 accessModel:
   pricing: unknown
-  onboarding: self-serve
+  onboarding: unknown
   trial: false
   try_now: false
   public: false
-  label: Self-serve signup
-  confidence: medium
+  label: Unknown
+  confidence: low
   source:
   - authentication
-  generated: '2026-07-22'
+  - security
+  - sandbox
+  generated: '2026-09-03'
   method: derived
 image: https://d26nkljutfj8pz.cloudfront.net/images/metalend-share.png
 x-type: company
@@ -266,8 +268,9 @@ common:
   url: security/metalend-domain-security.yml
 - type: AgentSkill
   url: skills/_index.yml
-- type: MCPServer
+- type: X-MCPServerCandidate
   url: mcp/metalend-mcp.yml
+  note: 'Renamed from MCPServer 2026-09-03 (roadmap#247): the manifest self-describes as status: candidate — a tool list derived from the published API contracts, not an existing server. The scorer already read the manifest and reported mcp_server correctly; the MCPServer type was crediting the artifact-type surfaces with a server that does not exist.'
 - type: ErrorCatalog
   url: errors/metalend-error-codes.yml
 - type: Conventions

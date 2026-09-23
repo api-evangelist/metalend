@@ -1,16 +1,7 @@
 {
   "provider": "metalend",
   "sources": [
-    "metalend-ai-agent-guide-api-openapi.yml",
-    "metalend-auth-api-openapi.yml",
-    "metalend-balances-api-openapi.yml",
-    "metalend-deposits-api-openapi.yml",
-    "metalend-pools-api-openapi.yml",
-    "metalend-rewards-api-openapi.yml",
-    "metalend-services-api-openapi.yml",
-    "metalend-transaction-costs-api-openapi.yml",
-    "metalend-user-configuration-api-openapi.yml",
-    "metalend-withdrawals-api-openapi.yml"
+    "_original/metalend-rebalancing-openapi.json"
   ],
   "outputs": [
     "metalend-ai-agent-guide-api-openapi.yml",
@@ -27,6 +18,23 @@
   "archived": [],
   "errors": [],
   "warnings": [],
-  "notes": [],
-  "skipped": []
+  "notes": [
+    "sourced from openapi/_original/ (1 archived document(s)); previously refined output at the top level was skipped rather than re-split",
+    "metalend-rebalancing-openapi.json: upgraded openapi 3.0.3 -> OpenAPI 3.2.0",
+    "metalend-rebalancing-openapi.json: tagged paths GET /v1/services -> Services",
+    "metalend-rebalancing-openapi.json: declared missing tag: Services",
+    "apis.yml register: already-registered"
+  ],
+  "skipped": [
+    "metalend-ai-agent-guide-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "metalend-auth-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "metalend-balances-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "metalend-deposits-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "metalend-pools-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "metalend-rewards-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "metalend-services-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "metalend-transaction-costs-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "metalend-user-configuration-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "metalend-withdrawals-api-openapi.yml: previously refined output, superseded by openapi/_original/"
+  ]
 }

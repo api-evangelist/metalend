@@ -77,39 +77,15 @@ paths:
         mode: free
 components:
   schemas:
-    PoolApyInfo:
+    GetPoolsResponse:
       type: object
       required:
-      - native
-      - rewards
-      - total
-      - totalNet
-      - performanceFee
+      - pools
       properties:
-        native:
-          type: string
-          description: Native APY percentage (formatted to 2 decimals)
-          example: '3.45'
-        rewards:
-          type: object
-          additionalProperties:
-            type: string
-          description: Map of reward tokens to their APYs (formatted to 2 decimals)
-          example:
-            Merkle: '1.23'
-            Brevis: '0.87'
-        total:
-          type: string
-          description: Total APY percentage (formatted to 2 decimals)
-          example: '5.55'
-        totalNet:
-          type: string
-          description: Total net APY percentage (formatted to 2 decimals)
-          example: '4.55'
-        performanceFee:
-          type: string
-          description: Performance fee percentage (formatted to 2 decimals)
-          example: '1.00'
+        pools:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pool'
     Pool:
       description: "**Important: `poolAddress` is NOT globally unique across tokens.** For Aave V3, the same `poolAddress` (the Aave lending pool contract) is shared  across all tokens on a given chain. For example, Aave V3 USDC, USDT, and RLUSD  on Ethereum all have the same `poolAddress`.\nA pool is uniquely identified by the combination of THREE fields together:\n  - `poolAddress`\n  - `chain`\n  - `underlyingToken.symbol`\n\nWhen filtering pools by token (e.g. \"show only USDC pools\"), ALWAYS filter on  `underlyingToken.symbol`. Never filter on `poolAddress` alone for Aave pools.\n"
       type: object
@@ -186,6 +162,62 @@ components:
         blacklisted:
           type: boolean
           description: Indicates whether the pool has been blacklisted (banned) due to a third party critical security issue. Blacklisted pools are deprecated and retained solely for backwards compatibility. New deposits are never routed to blacklisted pools, and all existing balances are automatically rebalanced out of such pools when possible (balance is large enough to pay on-behalf fee and there is enough liquidity to withdraw).
+    PoolApyInfo:
+      type: object
+      required:
+      - native
+      - rewards
+      - total
+      - totalNet
+      - performanceFee
+      properties:
+        native:
+          type: string
+          description: Native APY percentage (formatted to 2 decimals)
+          example: '3.45'
+        rewards:
+          type: object
+          additionalProperties:
+            type: string
+          description: Map of reward tokens to their APYs (formatted to 2 decimals)
+          example:
+            Merkle: '1.23'
+            Brevis: '0.87'
+        total:
+          type: string
+          description: Total APY percentage (formatted to 2 decimals)
+          example: '5.55'
+        totalNet:
+          type: string
+          description: Total net APY percentage (formatted to 2 decimals)
+          example: '4.55'
+        performanceFee:
+          type: string
+          description: Performance fee percentage (formatted to 2 decimals)
+          example: '1.00'
+    ApiError:
+      type: object
+      required:
+      - code
+      - internalCode
+      - message
+      properties:
+        code:
+          type: string
+          description: Error category identifier
+        internalCode:
+          type: string
+          description: More specific error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracking
+        retryAfterSeconds:
+          type: integer
+          description: Seconds to wait before retrying (for rate limiting)
     Token:
       type: object
       required:
@@ -221,38 +253,6 @@ components:
           - string
           - 'null'
           description: Token contract version
-    ApiError:
-      type: object
-      required:
-      - code
-      - internalCode
-      - message
-      properties:
-        code:
-          type: string
-          description: Error category identifier
-        internalCode:
-          type: string
-          description: More specific error identifier
-        message:
-          type: string
-          description: Human-readable error message
-        requestId:
-          type: string
-          format: uuid
-          description: Unique request identifier for tracking
-        retryAfterSeconds:
-          type: integer
-          description: Seconds to wait before retrying (for rate limiting)
-    GetPoolsResponse:
-      type: object
-      required:
-      - pools
-      properties:
-        pools:
-          type: array
-          items:
-            $ref: '#/components/schemas/Pool'
     PoolSignData:
       type: object
       required:

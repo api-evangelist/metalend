@@ -349,28 +349,44 @@ paths:
         mode: free
 components:
   examples:
-    UpdateConfigRejectedBridgeInProgress:
-      summary: Config update rejected - bridge in progress (USDC)
-      value:
-        code: CONFLICT_ERROR
-        internalCode: UPDATE_CONFIG_REJECTED
-        message: 'Config upsert rejected: Bridge in progress for USDC'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidCollateralExposureDuplicates:
-      summary: Duplicate symbols in collateralExposure list
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_COLLATERAL_EXPOSURE
-        message: 'Invalid collateral exposure: Collateral exposure list contains duplicate entries.'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    ConfigInvalidSignature:
-      summary: Invalid config signature
+    ConfigValidationFailed:
+      summary: Config validation failed
       value:
         code: ILLEGAL_ARGUMENT_ERROR
         internalCode: INVALID_SIGNATURE
-        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Config signature verification failed'
+        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Config signature is blank'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureRequiredTvlNotMet:
+      summary: No configured Aave pool meets required minimum TVL
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Collateral exposure is enabled: at least one configured Aave pool must meet your required minimum TVL (5000000 USD). None qualify. LINEA: Aave market TVL 1000000 USD is below required minimum TVL 5000000 USD'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureMaxSize:
+      summary: collateralExposure list exceeds maximum length
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Collateral exposure list exceeds maximum allowed size of 200 entries.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressCheckSum:
+      summary: Invalid address checksum
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_CHECKSUM
+        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureUnknownSymbols:
+      summary: Unknown collateral symbols (not tracked in vault exposure)
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Unknown collateral symbol(s) not present in tracked vault exposure: FOO, XYZ'
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
     UpdateConfigRejectedRefillInProgress:
@@ -389,36 +405,28 @@ components:
         message: 'Invalid collateral exposure: Collateral exposure is enabled: at least one Aave pool (protocol 0) is required. Set collateralExposure to null to save a configuration without Aave.'
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
-    InvalidAddressFormat:
-      summary: Invalid address format
+    UpdateConfigRejectedBridgeInProgress:
+      summary: Config update rejected - bridge in progress (USDC)
       value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_ADDRESS_FORMAT
-        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
+        code: CONFLICT_ERROR
+        internalCode: UPDATE_CONFIG_REJECTED
+        message: 'Config upsert rejected: Bridge in progress for USDC'
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
-    WalletAddressBlank:
-      summary: Wallet address blank
+    ConfigInvalidSignature:
+      summary: Invalid config signature
       value:
         code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: BLANK_ADDRESS
-        message: Wallet address cannot be blank
+        internalCode: INVALID_SIGNATURE
+        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Config signature verification failed'
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
-    InvalidAddressCheckSum:
-      summary: Invalid address checksum
+    TokenNotSupported:
+      summary: Token not supported
       value:
         code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_ADDRESS_CHECKSUM
-        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidCollateralExposureUnknownSymbols:
-      summary: Unknown collateral symbols (not tracked in vault exposure)
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_COLLATERAL_EXPOSURE
-        message: 'Invalid collateral exposure: Unknown collateral symbol(s) not present in tracked vault exposure: FOO, XYZ'
+        internalCode: TOKEN_NOT_SUPPORTED
+        message: 'Token ''RLUSD'' is not supported. Supported tokens: USDC, MUSD, USDT'
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
     ConfigProtocolsPoolsAndDomains:
@@ -440,60 +448,12 @@ components:
         message: 'Invalid configuration arrays: Domain IDs, protocol IDs, and pool contracts arrays must have the same length'
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
-    InvalidCollateralExposureRequiredTvlNotMet:
-      summary: No configured Aave pool meets required minimum TVL
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_COLLATERAL_EXPOSURE
-        message: 'Invalid collateral exposure: Collateral exposure is enabled: at least one configured Aave pool must meet your required minimum TVL (5000000 USD). None qualify. LINEA: Aave market TVL 1000000 USD is below required minimum TVL 5000000 USD'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
     InvalidCollateralExposureBlankEntry:
       summary: Blank string in collateralExposure list
       value:
         code: ILLEGAL_ARGUMENT_ERROR
         internalCode: INVALID_COLLATERAL_EXPOSURE
         message: 'Invalid collateral exposure: Entry at index 0 cannot be blank.'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    TokenNotSupported:
-      summary: Token not supported
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: TOKEN_NOT_SUPPORTED
-        message: 'Token ''RLUSD'' is not supported. Supported tokens: USDC, MUSD, USDT'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    UnauthorizedNoHeader:
-      summary: No authorization header
-      value:
-        code: AUTHENTICATION_FAILED
-        internalCode: NO_AUTH_INFO
-        message: No authentication information provided
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    ConfigValidationFailed:
-      summary: Config validation failed
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_SIGNATURE
-        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Config signature is blank'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidCollateralExposureMaxSize:
-      summary: collateralExposure list exceeds maximum length
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_COLLATERAL_EXPOSURE
-        message: 'Invalid collateral exposure: Collateral exposure list exceeds maximum allowed size of 200 entries.'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidCollateralExposureEmptyList:
-      summary: Empty collateralExposure array (use null to disable filter)
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_COLLATERAL_EXPOSURE
-        message: 'Invalid collateral exposure: Collateral exposure list cannot be empty. Use null to disable the filter.'
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
     UpdateConfigRejectedPoolWithBalance:
@@ -504,122 +464,47 @@ components:
         message: 'Config upsert rejected: Cannot disable pool with balance'
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
-  responses:
-    InternalError:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            Internal Error:
-              value:
-                code: INTERNAL_ERROR
-                internalCode: INTERNAL_ERROR
-                message: An unexpected error occurred while processing your request
-                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-                retryAfterSeconds: null
+    InvalidAddressFormat:
+      summary: Invalid address format
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_FORMAT
+        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
     UnauthorizedNoHeader:
-      description: No authorization header provided
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            unauthorizedNoHeader:
-              $ref: '#/components/examples/UnauthorizedNoHeader'
-    RateLimitExceeded:
-      description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
-
-
-        Response headers (when throttled):
-
-        - `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).
-
-        - `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).
-
-        - `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).
-
-        - `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.
-
-
-        `internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).
-
-        '
-      headers:
-        Retry-After:
-          description: Seconds to wait before retrying this endpoint.
-          schema:
-            type: integer
-            example: 3
-        X-RateLimit-Limit:
-          description: Maximum number of requests allowed in the current window for this endpoint.
-          schema:
-            type: integer
-            example: 1
-        X-RateLimit-Remaining:
-          description: Remaining requests in the current window.
-          schema:
-            type: integer
-            example: 0
-        X-RateLimit-Reset:
-          description: Unix timestamp (seconds) when the current limit window resets.
-          schema:
-            type: integer
-            format: int64
-            example: 1713264123
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            rateLimitExceededPerIp:
-              summary: Rate limit exceeded (per client IP)
-              value:
-                code: RATE_LIMIT_EXCEEDED
-                internalCode: THROTTLE_PER_IP
-                message: Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.
-                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-                retryAfterSeconds: 3
-    Forbidden:
-      description: User is not authorized to perform this action
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            forbiddenGeneric:
-              summary: Forbidden - not authorized
-              value:
-                code: FORBIDDEN
-                internalCode: FORBIDDEN_GENERIC
-                message: User is not authorized to perform this action
-                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-                retryAfterSeconds: null
+      summary: No authorization header
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: NO_AUTH_INFO
+        message: No authentication information provided
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureDuplicates:
+      summary: Duplicate symbols in collateralExposure list
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Collateral exposure list contains duplicate entries.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidCollateralExposureEmptyList:
+      summary: Empty collateralExposure array (use null to disable filter)
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_COLLATERAL_EXPOSURE
+        message: 'Invalid collateral exposure: Collateral exposure list cannot be empty. Use null to disable the filter.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WalletAddressBlank:
+      summary: Wallet address blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_ADDRESS
+        message: Wallet address cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
   schemas:
-    ApiError:
-      type: object
-      required:
-      - code
-      - internalCode
-      - message
-      properties:
-        code:
-          type: string
-          description: Error category identifier
-        internalCode:
-          type: string
-          description: More specific error identifier
-        message:
-          type: string
-          description: Human-readable error message
-        requestId:
-          type: string
-          format: uuid
-          description: Unique request identifier for tracking
-        retryAfterSeconds:
-          type: integer
-          description: Seconds to wait before retrying (for rate limiting)
     CreateOrUpdateConfigResponse:
       type: object
       required:
@@ -647,76 +532,6 @@ components:
           - UPDATED
           description: Operation performed
           example: CREATED
-    GetDefaultConfigResponse:
-      type: object
-      required:
-      - token
-      - rebalancingManagerAddress
-      - domainIds
-      - protocolIds
-      - poolAddresses
-      properties:
-        token:
-          type: string
-          description: Token symbol
-          example: USDT
-        rebalancingManagerAddress:
-          type: string
-          description: RebalancingManager contract address
-          example: '0x971ad06e6fde83b0265bd3ced5f5eaf30e269962'
-        domainIds:
-          type: array
-          items:
-            type: integer
-          description: Default domain IDs - match index values of protocolIds and poolAddresses
-          example:
-          - 11
-          - 11
-        protocolIds:
-          type: array
-          items:
-            type: integer
-          description: Default protocol IDs - match index values of domainIds and poolAddresses
-          example:
-          - 0
-          - 2
-        poolAddresses:
-          type: array
-          items:
-            type: string
-          description: Default pool contract addresses - match index values of domainIds and protocolIds
-          example:
-          - '0xc47b8c00b0f69a36fa203ffeac0334874574a8ac'
-          - '0xcbef9be95738290188b25ca9a6dd2bec417a578c'
-    GetConfigResponse:
-      type: object
-      required:
-      - walletAddress
-      - rebalancerAddress
-      - rebalancingManagerAddress
-      - rebalancerExists
-      - configurations
-      properties:
-        walletAddress:
-          type: string
-          description: User's wallet address
-          example: '0x1234567890123456789012345678901234567890'
-        rebalancerAddress:
-          type: string
-          description: Deployed rebalancer contract address
-          example: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
-        rebalancingManagerAddress:
-          type: string
-          description: RebalancingManager contract address
-          example: '0x971ad06e6fde83b0265bd3ced5f5eaf30e269962'
-        rebalancerExists:
-          type: boolean
-          description: Whether a rebalancer contract has been deployed for this wallet
-          example: true
-        configurations:
-          type: array
-          items:
-            $ref: '#/components/schemas/Configuration'
     CreateOrUpdateConfigRequest:
       type: object
       required:
@@ -809,6 +624,99 @@ components:
           - WETH
           - cbBTC
           - wstETH
+    ApiError:
+      type: object
+      required:
+      - code
+      - internalCode
+      - message
+      properties:
+        code:
+          type: string
+          description: Error category identifier
+        internalCode:
+          type: string
+          description: More specific error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracking
+        retryAfterSeconds:
+          type: integer
+          description: Seconds to wait before retrying (for rate limiting)
+    GetConfigResponse:
+      type: object
+      required:
+      - walletAddress
+      - rebalancerAddress
+      - rebalancingManagerAddress
+      - rebalancerExists
+      - configurations
+      properties:
+        walletAddress:
+          type: string
+          description: User's wallet address
+          example: '0x1234567890123456789012345678901234567890'
+        rebalancerAddress:
+          type: string
+          description: Deployed rebalancer contract address
+          example: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+        rebalancingManagerAddress:
+          type: string
+          description: RebalancingManager contract address
+          example: '0x971ad06e6fde83b0265bd3ced5f5eaf30e269962'
+        rebalancerExists:
+          type: boolean
+          description: Whether a rebalancer contract has been deployed for this wallet
+          example: true
+        configurations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Configuration'
+    GetDefaultConfigResponse:
+      type: object
+      required:
+      - token
+      - rebalancingManagerAddress
+      - domainIds
+      - protocolIds
+      - poolAddresses
+      properties:
+        token:
+          type: string
+          description: Token symbol
+          example: USDT
+        rebalancingManagerAddress:
+          type: string
+          description: RebalancingManager contract address
+          example: '0x971ad06e6fde83b0265bd3ced5f5eaf30e269962'
+        domainIds:
+          type: array
+          items:
+            type: integer
+          description: Default domain IDs - match index values of protocolIds and poolAddresses
+          example:
+          - 11
+          - 11
+        protocolIds:
+          type: array
+          items:
+            type: integer
+          description: Default protocol IDs - match index values of domainIds and poolAddresses
+          example:
+          - 0
+          - 2
+        poolAddresses:
+          type: array
+          items:
+            type: string
+          description: Default pool contract addresses - match index values of domainIds and protocolIds
+          example:
+          - '0xc47b8c00b0f69a36fa203ffeac0334874574a8ac'
+          - '0xcbef9be95738290188b25ca9a6dd2bec417a578c'
     Configuration:
       type: object
       required:
@@ -906,6 +814,98 @@ components:
             - false: Using default configuration values (not signed by user)
 
             '
+  responses:
+    Forbidden:
+      description: User is not authorized to perform this action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            forbiddenGeneric:
+              summary: Forbidden - not authorized
+              value:
+                code: FORBIDDEN
+                internalCode: FORBIDDEN_GENERIC
+                message: User is not authorized to perform this action
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      description: No authorization header provided
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            unauthorizedNoHeader:
+              $ref: '#/components/examples/UnauthorizedNoHeader'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            Internal Error:
+              value:
+                code: INTERNAL_ERROR
+                internalCode: INTERNAL_ERROR
+                message: An unexpected error occurred while processing your request
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+    RateLimitExceeded:
+      description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
+
+
+        Response headers (when throttled):
+
+        - `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).
+
+        - `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).
+
+        - `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).
+
+        - `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.
+
+
+        `internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).
+
+        '
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying this endpoint.
+          schema:
+            type: integer
+            example: 3
+        X-RateLimit-Limit:
+          description: Maximum number of requests allowed in the current window for this endpoint.
+          schema:
+            type: integer
+            example: 1
+        X-RateLimit-Remaining:
+          description: Remaining requests in the current window.
+          schema:
+            type: integer
+            example: 0
+        X-RateLimit-Reset:
+          description: Unix timestamp (seconds) when the current limit window resets.
+          schema:
+            type: integer
+            format: int64
+            example: 1713264123
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            rateLimitExceededPerIp:
+              summary: Rate limit exceeded (per client IP)
+              value:
+                code: RATE_LIMIT_EXCEEDED
+                internalCode: THROTTLE_PER_IP
+                message: Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: 3
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

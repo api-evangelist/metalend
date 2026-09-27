@@ -205,6 +205,68 @@ paths:
         mode: free
 components:
   schemas:
+    GetBridgeBalancesResponse:
+      type: object
+      required:
+      - walletAddress
+      - rebalancerAddress
+      - token
+      - balances
+      properties:
+        walletAddress:
+          type: string
+          description: Wallet address
+        rebalancerAddress:
+          type: string
+          description: Rebalancer contract address
+        token:
+          type: string
+          description: Token symbol
+        balances:
+          type: array
+          items:
+            $ref: '#/components/schemas/BridgeBalance'
+    Value:
+      type: object
+      required:
+      - token
+      - poolContract
+      properties:
+        token:
+          type: string
+          description: Token address
+        poolContract:
+          type: string
+          description: Pool contract address
+        amount:
+          type:
+          - string
+          - 'null'
+          description: 'The server always returns this as null. You MUST substitute your chosen withdrawal amount here before signing. Use the same value you will send in the WithdrawalRequest body. Must be ≤ PoolBalance.balanceRaw and ≥ minimum (e.g. 100000 for USDC = $0.10).
+
+            '
+        deadline:
+          type:
+          - string
+          - 'null'
+          description: 'The server always returns this as null. You MUST substitute your chosen deadline here before signing. Use the same value you will send in the WithdrawalRequest body. Must be a unix timestamp no more than 60 seconds in the future.
+
+            '
+          example: '1763558621'
+    TypeDetail:
+      type: object
+      required:
+      - name
+      - type
+      properties:
+        name:
+          type: string
+          description: Field name
+          example: token
+        type:
+          type: string
+          description: Field type
+          example: address
     Summary:
       type: object
       required:
@@ -237,137 +299,102 @@ components:
           description: List of queried chain names
           example:
           - linea
-    ProtocolBalance:
+    TokenBalance:
       type: object
       required:
-      - protocolName
-      - protocolIconUrl
+      - token
       - totalBalanceRaw
       - totalBalanceFormatted
-      - perPool
+      - netEarning
+      - aggregateApy
+      - perChain
       properties:
-        protocolName:
+        token:
           type: string
-          description: Protocol name
-        protocolIconUrl:
-          type: string
-          description: Protocol icon URL
+          description: Token symbol
+          example: USDC
         totalBalanceRaw:
           type: string
-          description: Total balance in protocol (raw units)
+          description: Total balance in raw units
+          example: '1000000000'
         totalBalanceFormatted:
           type: string
-          description: Human-readable balance in protocol (formatted to 2 decimals)
-          example: '28.05'
-        perPool:
+          description: Human-readable balance (formatted to 2 decimals)
+          example: '1000.00'
+        netEarning:
+          type: string
+          description: Net earnings in USD (formatted to 2 decimals)
+          example: '12.34'
+        aggregateApy:
+          type: string
+          description: Weighted average APY across all protocols (formatted to 2 decimals)
+          example: '4.56'
+        perChain:
           type: array
           items:
-            $ref: '#/components/schemas/PoolBalance'
-    Types:
+            $ref: '#/components/schemas/ChainBalance'
+        spendingInfo:
+          $ref: '#/components/schemas/SpendingInfo'
+          description: 'Card spending balance breakdown for USDC on Linea. Only present when the  user has the MetaLend card feature active in their configuration.  This balance is SEPARATE from the pool balances in `perChain` but is part  of the user''s total rebalancer balance. Display alongside pool balances  when showing the user their total holdings.
+
+            '
+        bridgeBalances:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/BridgeBalance'
+    Token:
       type: object
       required:
-      - Withdrawal
+      - symbol
+      - name
+      - address
+      - decimals
       properties:
-        Withdrawal:
-          type: array
-          items:
-            $ref: '#/components/schemas/TypeDetail'
-    PoolBalance:
+        symbol:
+          type: string
+          description: Token symbol
+          enum:
+          - USDC
+          - MUSD
+          - USDT
+          - RLUSD
+          example: USDC
+        name:
+          type: string
+          description: Token full name
+          example: USD Coin
+        address:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+          example: '0x1234567890123456789012345678901234567890'
+          description: Token contract address
+        decimals:
+          type: integer
+          description: Token decimals
+          example: 6
+        version:
+          type:
+          - string
+          - 'null'
+          description: Token contract version
+    PoolSignData:
       type: object
       required:
+      - protocolId
       - poolAddress
-      - poolName
-      - balanceRaw
-      - balanceFormatted
-      - apy
-      - chain
-      - chainId
-      - withdrawRequest
+      - domainId
       properties:
+        protocolId:
+          type: integer
+          description: Protocol ID (0=Aave, 1=Morpho, 2=Euler)
         poolAddress:
           type: string
           description: Pool contract address
-          example: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
-        poolName:
-          type: string
-          description: Pool name
-        balanceRaw:
-          type: string
-          description: Balance in pool (raw units)
-        balanceFormatted:
-          type: string
-          description: Human-readable pool balance (formatted to 2 decimals)
-          example: '11.23'
-        apy:
-          type: string
-          description: Current APY for this pool (formatted to 2 decimals)
-          example: '4.56'
-        chain:
-          type: string
-          description: Chain name
-        chainId:
+        domainId:
           type: integer
-          description: Chain ID
-        withdrawRequest:
-          $ref: '#/components/schemas/WithdrawalRequestData'
-    ApiError:
-      type: object
-      required:
-      - code
-      - internalCode
-      - message
-      properties:
-        code:
-          type: string
-          description: Error category identifier
-        internalCode:
-          type: string
-          description: More specific error identifier
-        message:
-          type: string
-          description: Human-readable error message
-        requestId:
-          type: string
-          format: uuid
-          description: Unique request identifier for tracking
-        retryAfterSeconds:
-          type: integer
-          description: Seconds to wait before retrying (for rate limiting)
-    SpendingInfo:
-      description: 'Breakdown of USDC funds reserved on Linea for MetaLend card spending. Only returned when the card feature is active in the user''s config. The total rebalancer balance = regular pool balances (perChain) +  lineaUsdcBalance + lineaAaveUsdcBalance from this object.
-
-        '
-      type: object
-      required:
-      - lineaUsdcBalanceRaw
-      - lineaUsdcBalanceFormatted
-      - lineaAaveUsdcBalanceRaw
-      - lineaAaveUsdcBalanceFormatted
-      - lineaAaveApy
-      properties:
-        lineaUsdcBalanceRaw:
-          type: string
-          description: 'Liquid USDC held directly in the rebalancer contract on Linea (raw units,  6 decimals). This is uninvested and immediately available for card spending.
-
-            '
-        lineaUsdcBalanceFormatted:
-          type: string
-          description: Human-readable liquid USDC balance on Linea (formatted to 2 decimals).
-        lineaAaveUsdcBalanceRaw:
-          type: string
-          description: 'USDC deposited in Aave V3 on Linea (raw units, 6 decimals). This is earning  yield and also counts toward the card spending balance. Add to  lineaUsdcBalanceRaw to get the full card balance.
-
-            '
-        lineaAaveUsdcBalanceFormatted:
-          type: string
-          description: 'Human-readable USDC balance in Aave V3 on Linea (formatted to 2 decimals).
-
-            '
-        lineaAaveApy:
-          type: string
-          description: 'Current APY of the Aave V3 USDC pool on Linea where card funds earn yield  (formatted to 2 decimals, e.g. "2.01").
-
-            '
+          description: Domain ID for the chain
     Pool:
       description: "**Important: `poolAddress` is NOT globally unique across tokens.** For Aave V3, the same `poolAddress` (the Aave lending pool contract) is shared  across all tokens on a given chain. For example, Aave V3 USDC, USDT, and RLUSD  on Ethereum all have the same `poolAddress`.\nA pool is uniquely identified by the combination of THREE fields together:\n  - `poolAddress`\n  - `chain`\n  - `underlyingToken.symbol`\n\nWhen filtering pools by token (e.g. \"show only USDC pools\"), ALWAYS filter on  `underlyingToken.symbol`. Never filter on `poolAddress` alone for Aave pools.\n"
       type: object
@@ -444,158 +471,52 @@ components:
         blacklisted:
           type: boolean
           description: Indicates whether the pool has been blacklisted (banned) due to a third party critical security issue. Blacklisted pools are deprecated and retained solely for backwards compatibility. New deposits are never routed to blacklisted pools, and all existing balances are automatically rebalanced out of such pools when possible (balance is large enough to pay on-behalf fee and there is enough liquidity to withdraw).
-    Token:
+    ProtocolBalance:
       type: object
       required:
-      - symbol
-      - name
-      - address
-      - decimals
-      properties:
-        symbol:
-          type: string
-          description: Token symbol
-          enum:
-          - USDC
-          - MUSD
-          - USDT
-          - RLUSD
-          example: USDC
-        name:
-          type: string
-          description: Token full name
-          example: USD Coin
-        address:
-          type: string
-          pattern: ^0x[a-fA-F0-9]{40}$
-          example: '0x1234567890123456789012345678901234567890'
-          description: Token contract address
-        decimals:
-          type: integer
-          description: Token decimals
-          example: 6
-        version:
-          type:
-          - string
-          - 'null'
-          description: Token contract version
-    TokenBalance:
-      type: object
-      required:
-      - token
+      - protocolName
+      - protocolIconUrl
       - totalBalanceRaw
       - totalBalanceFormatted
-      - netEarning
-      - aggregateApy
-      - perChain
+      - perPool
       properties:
-        token:
+        protocolName:
           type: string
-          description: Token symbol
-          example: USDC
+          description: Protocol name
+        protocolIconUrl:
+          type: string
+          description: Protocol icon URL
         totalBalanceRaw:
           type: string
-          description: Total balance in raw units
-          example: '1000000000'
+          description: Total balance in protocol (raw units)
         totalBalanceFormatted:
           type: string
-          description: Human-readable balance (formatted to 2 decimals)
-          example: '1000.00'
-        netEarning:
-          type: string
-          description: Net earnings in USD (formatted to 2 decimals)
-          example: '12.34'
-        aggregateApy:
-          type: string
-          description: Weighted average APY across all protocols (formatted to 2 decimals)
-          example: '4.56'
-        perChain:
+          description: Human-readable balance in protocol (formatted to 2 decimals)
+          example: '28.05'
+        perPool:
           type: array
           items:
-            $ref: '#/components/schemas/ChainBalance'
-        spendingInfo:
-          $ref: '#/components/schemas/SpendingInfo'
-          description: 'Card spending balance breakdown for USDC on Linea. Only present when the  user has the MetaLend card feature active in their configuration.  This balance is SEPARATE from the pool balances in `perChain` but is part  of the user''s total rebalancer balance. Display alongside pool balances  when showing the user their total holdings.
-
-            '
-        bridgeBalances:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/BridgeBalance'
-    GetBridgeBalancesResponse:
+            $ref: '#/components/schemas/PoolBalance'
+    Domain:
       type: object
       required:
-      - walletAddress
-      - rebalancerAddress
-      - token
-      - balances
+      - name
+      - version
+      - chainId
+      - verifyingContract
       properties:
-        walletAddress:
+        name:
           type: string
-          description: Wallet address
-        rebalancerAddress:
+          example: MetaLend Rebalancing
+        version:
           type: string
-          description: Rebalancer contract address
-        token:
+          example: 4.0.0
+        chainId:
+          type: integer
+          example: 59144
+        verifyingContract:
           type: string
-          description: Token symbol
-        balances:
-          type: array
-          items:
-            $ref: '#/components/schemas/BridgeBalance'
-    GetBalancesResponse:
-      type: object
-      required:
-      - walletAddress
-      - rebalancerAddress
-      - perToken
-      - summary
-      properties:
-        walletAddress:
-          type: string
-          pattern: ^0x[a-fA-F0-9]{40}$
-          example: '0x1234567890123456789012345678901234567890'
-          description: User's Ethereum wallet address
-        rebalancerAddress:
-          type: string
-          pattern: ^0x[a-fA-F0-9]{40}$
-          example: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
-          description: Rebalancer contract address
-        perToken:
-          type: array
-          items:
-            $ref: '#/components/schemas/TokenBalance'
-        summary:
-          $ref: '#/components/schemas/Summary'
-    Value:
-      type: object
-      required:
-      - token
-      - poolContract
-      properties:
-        token:
-          type: string
-          description: Token address
-        poolContract:
-          type: string
-          description: Pool contract address
-        amount:
-          type:
-          - string
-          - 'null'
-          description: 'The server always returns this as null. You MUST substitute your chosen withdrawal amount here before signing. Use the same value you will send in the WithdrawalRequest body. Must be ≤ PoolBalance.balanceRaw and ≥ minimum (e.g. 100000 for USDC = $0.10).
-
-            '
-        deadline:
-          type:
-          - string
-          - 'null'
-          description: 'The server always returns this as null. You MUST substitute your chosen deadline here before signing. Use the same value you will send in the WithdrawalRequest body. Must be a unix timestamp no more than 60 seconds in the future.
-
-            '
-          example: '1763558621'
+          description: Contract address
     ChainBalance:
       type: object
       required:
@@ -623,22 +544,100 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProtocolBalance'
-    PoolSignData:
+    PoolBalance:
       type: object
       required:
-      - protocolId
       - poolAddress
-      - domainId
+      - poolName
+      - balanceRaw
+      - balanceFormatted
+      - apy
+      - chain
+      - chainId
+      - withdrawRequest
       properties:
-        protocolId:
-          type: integer
-          description: Protocol ID (0=Aave, 1=Morpho, 2=Euler)
         poolAddress:
           type: string
           description: Pool contract address
-        domainId:
+          example: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+        poolName:
+          type: string
+          description: Pool name
+        balanceRaw:
+          type: string
+          description: Balance in pool (raw units)
+        balanceFormatted:
+          type: string
+          description: Human-readable pool balance (formatted to 2 decimals)
+          example: '11.23'
+        apy:
+          type: string
+          description: Current APY for this pool (formatted to 2 decimals)
+          example: '4.56'
+        chain:
+          type: string
+          description: Chain name
+        chainId:
           type: integer
-          description: Domain ID for the chain
+          description: Chain ID
+        withdrawRequest:
+          $ref: '#/components/schemas/WithdrawalRequestData'
+    GetBalancesResponse:
+      type: object
+      required:
+      - walletAddress
+      - rebalancerAddress
+      - perToken
+      - summary
+      properties:
+        walletAddress:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+          example: '0x1234567890123456789012345678901234567890'
+          description: User's Ethereum wallet address
+        rebalancerAddress:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+          example: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+          description: Rebalancer contract address
+        perToken:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenBalance'
+        summary:
+          $ref: '#/components/schemas/Summary'
+    ApiError:
+      type: object
+      required:
+      - code
+      - internalCode
+      - message
+      properties:
+        code:
+          type: string
+          description: Error category identifier
+        internalCode:
+          type: string
+          description: More specific error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracking
+        retryAfterSeconds:
+          type: integer
+          description: Seconds to wait before retrying (for rate limiting)
+    Types:
+      type: object
+      required:
+      - Withdrawal
+      properties:
+        Withdrawal:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeDetail'
     WithdrawalRequestData:
       description: 'Always present when this pool has a non-zero balance. Contains the pre-filled EIP-712 domain, types, and partial value needed to sign a withdrawal. The `value.amount` and `value.deadline` are returned as null — you MUST fill them in with your chosen values before signing.
 
@@ -655,6 +654,41 @@ components:
           $ref: '#/components/schemas/Types'
         value:
           $ref: '#/components/schemas/Value'
+    SpendingInfo:
+      description: 'Breakdown of USDC funds reserved on Linea for MetaLend card spending. Only returned when the card feature is active in the user''s config. The total rebalancer balance = regular pool balances (perChain) +  lineaUsdcBalance + lineaAaveUsdcBalance from this object.
+
+        '
+      type: object
+      required:
+      - lineaUsdcBalanceRaw
+      - lineaUsdcBalanceFormatted
+      - lineaAaveUsdcBalanceRaw
+      - lineaAaveUsdcBalanceFormatted
+      - lineaAaveApy
+      properties:
+        lineaUsdcBalanceRaw:
+          type: string
+          description: 'Liquid USDC held directly in the rebalancer contract on Linea (raw units,  6 decimals). This is uninvested and immediately available for card spending.
+
+            '
+        lineaUsdcBalanceFormatted:
+          type: string
+          description: Human-readable liquid USDC balance on Linea (formatted to 2 decimals).
+        lineaAaveUsdcBalanceRaw:
+          type: string
+          description: 'USDC deposited in Aave V3 on Linea (raw units, 6 decimals). This is earning  yield and also counts toward the card spending balance. Add to  lineaUsdcBalanceRaw to get the full card balance.
+
+            '
+        lineaAaveUsdcBalanceFormatted:
+          type: string
+          description: 'Human-readable USDC balance in Aave V3 on Linea (formatted to 2 decimals).
+
+            '
+        lineaAaveApy:
+          type: string
+          description: 'Current APY of the Aave V3 USDC pool on Linea where card funds earn yield  (formatted to 2 decimals, e.g. "2.01").
+
+            '
     PoolApyInfo:
       type: object
       required:
@@ -688,40 +722,6 @@ components:
           type: string
           description: Performance fee percentage (formatted to 2 decimals)
           example: '1.00'
-    TypeDetail:
-      type: object
-      required:
-      - name
-      - type
-      properties:
-        name:
-          type: string
-          description: Field name
-          example: token
-        type:
-          type: string
-          description: Field type
-          example: address
-    Domain:
-      type: object
-      required:
-      - name
-      - version
-      - chainId
-      - verifyingContract
-      properties:
-        name:
-          type: string
-          example: MetaLend Rebalancing
-        version:
-          type: string
-          example: 4.0.0
-        chainId:
-          type: integer
-          example: 59144
-        verifyingContract:
-          type: string
-          description: Contract address
     BridgeBalance:
       type: object
       required:
@@ -752,6 +752,79 @@ components:
         isForSpending:
           type: boolean
           description: Whether the balance is reserved for spending
+  examples:
+    RebalancerDoesNotExistForWallet:
+      summary: Rebalancer does not exist for wallet
+      value:
+        code: INTERNAL_ERROR
+        internalCode: REBALANCER_DOES_NOT_EXIST_FOR_WALLET
+        message: Rebalancer does not exist for wallet address '0x1234567890123456789012345678901234567890'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressCheckSum:
+      summary: Invalid address checksum
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_CHECKSUM
+        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    FailedBalances:
+      summary: Failed to query balances
+      value:
+        code: INTERNAL_ERROR
+        internalCode: FAILED_BALANCES
+        message: Failed to query balances.
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UserDoesNotExist:
+      summary: User does not exist
+      value:
+        code: INTERNAL_ERROR
+        internalCode: USER_DOES_NOT_EXIST
+        message: User does not exist for wallet address '0x1234567890123456789012345678901234567890'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    TokenNotSupported:
+      summary: Token not supported
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: TOKEN_NOT_SUPPORTED
+        message: 'Token ''RLUSD'' is not supported. Supported tokens: USDC, MUSD, USDT'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    DepositsPaused:
+      summary: Deposits temporarily paused (maintenance)
+      value:
+        code: SERVICE_UNAVAILABLE
+        internalCode: DEPOSITS_PAUSED
+        message: Deposits are temporarily paused
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressFormat:
+      summary: Invalid address format
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_FORMAT
+        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      summary: No authorization header
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: NO_AUTH_INFO
+        message: No authentication information provided
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WalletAddressBlank:
+      summary: Wallet address blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_ADDRESS
+        message: Wallet address cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
   responses:
     UnauthorizedNoHeader:
       description: No authorization header provided
@@ -832,79 +905,6 @@ components:
                 message: 'Failed to check token approval: ${e.message}'
                 requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
                 retryAfterSeconds: null
-  examples:
-    FailedBalances:
-      summary: Failed to query balances
-      value:
-        code: INTERNAL_ERROR
-        internalCode: FAILED_BALANCES
-        message: Failed to query balances.
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidAddressFormat:
-      summary: Invalid address format
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_ADDRESS_FORMAT
-        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    RebalancerDoesNotExistForWallet:
-      summary: Rebalancer does not exist for wallet
-      value:
-        code: INTERNAL_ERROR
-        internalCode: REBALANCER_DOES_NOT_EXIST_FOR_WALLET
-        message: Rebalancer does not exist for wallet address '0x1234567890123456789012345678901234567890'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    UserDoesNotExist:
-      summary: User does not exist
-      value:
-        code: INTERNAL_ERROR
-        internalCode: USER_DOES_NOT_EXIST
-        message: User does not exist for wallet address '0x1234567890123456789012345678901234567890'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    WalletAddressBlank:
-      summary: Wallet address blank
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: BLANK_ADDRESS
-        message: Wallet address cannot be blank
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    DepositsPaused:
-      summary: Deposits temporarily paused (maintenance)
-      value:
-        code: SERVICE_UNAVAILABLE
-        internalCode: DEPOSITS_PAUSED
-        message: Deposits are temporarily paused
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    UnauthorizedNoHeader:
-      summary: No authorization header
-      value:
-        code: AUTHENTICATION_FAILED
-        internalCode: NO_AUTH_INFO
-        message: No authentication information provided
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    TokenNotSupported:
-      summary: Token not supported
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: TOKEN_NOT_SUPPORTED
-        message: 'Token ''RLUSD'' is not supported. Supported tokens: USDC, MUSD, USDT'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidAddressCheckSum:
-      summary: Invalid address checksum
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_ADDRESS_CHECKSUM
-        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

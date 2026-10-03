@@ -332,7 +332,254 @@ paths:
       x-agentcash-auth:
         mode: free
 components:
+  responses:
+    RateLimitExceeded:
+      description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
+
+
+        Response headers (when throttled):
+
+        - `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).
+
+        - `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).
+
+        - `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).
+
+        - `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.
+
+
+        `internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).
+
+        '
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying this endpoint.
+          schema:
+            type: integer
+            example: 3
+        X-RateLimit-Limit:
+          description: Maximum number of requests allowed in the current window for this endpoint.
+          schema:
+            type: integer
+            example: 1
+        X-RateLimit-Remaining:
+          description: Remaining requests in the current window.
+          schema:
+            type: integer
+            example: 0
+        X-RateLimit-Reset:
+          description: Unix timestamp (seconds) when the current limit window resets.
+          schema:
+            type: integer
+            format: int64
+            example: 1713264123
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            rateLimitExceededPerIp:
+              summary: Rate limit exceeded (per client IP)
+              value:
+                code: RATE_LIMIT_EXCEEDED
+                internalCode: THROTTLE_PER_IP
+                message: Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: 3
+    Forbidden:
+      description: User is not authorized to perform this action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            forbiddenGeneric:
+              summary: Forbidden - not authorized
+              value:
+                code: FORBIDDEN
+                internalCode: FORBIDDEN_GENERIC
+                message: User is not authorized to perform this action
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      description: No authorization header provided
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            unauthorizedNoHeader:
+              $ref: '#/components/examples/UnauthorizedNoHeader'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            Internal Error:
+              value:
+                code: INTERNAL_ERROR
+                internalCode: INTERNAL_ERROR
+                message: An unexpected error occurred while processing your request
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+  examples:
+    ChainNotSupported:
+      summary: Chain not supported
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: CHAIN_NOT_SUPPORTED
+        message: 'Chain ''STX'' is not supported. Supported chains: eth, base, polygon, arbitrum, optimism, avax, linea'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    DeadlineMaxOneMinuteInFuture:
+      summary: Deadline too far in future
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TIMESTAMPS
+        message: 'Invalid timestamps: deadline must not be more than 1 minute in the future'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    AmountTooLow:
+      summary: Amount too low for deposit
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: AMOUNT_TOO_LOW
+        message: Amount is too low. Minimum required amount is 100000 raw units for operation 'DEPOSIT' on chain 'linea'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ProtocolNotFound:
+      summary: Protocol not found for pool contract
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: ILLEGAL_ARGUMENT
+        message: 'Illegal argument: No protocol found for token ''USDT'' on chain ''linea'' with pool contract ''0xCBeF9be95738290188B25ca9A6Dd2bEc417a578c'''
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WithdrawalNotAllowed:
+      summary: Withdrawal not allowed during refill
+      value:
+        code: CONFLICT_ERROR
+        internalCode: WITHDRAWAL_NOT_ALLOWED
+        message: 'Withdrawal not allowed: Withdrawals from AAVE on LINEA are not allowed while a card refill is in progress.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InsufficientBalance:
+      summary: Insufficient wallet balance
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INSUFFICIENT_BALANCE
+        message: Insufficient balance. Available balance is 500000 raw units, but request required amount is 1000000 raw units.
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    FailedWithdrawSignatureValidation:
+      summary: Failed withdrawal signature validation
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_SIGNATURE
+        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Withdrawal signature verification failed'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    TokenNotSupported:
+      summary: Token not supported
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: TOKEN_NOT_SUPPORTED
+        message: 'Token ''RLUSD'' is not supported. Supported tokens: USDC, MUSD, USDT'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    MissingWithdrawalTrackingId:
+      summary: Missing withdrawal tracking ID
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_TRACKING_ID
+        message: Tracking ID cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      summary: No authorization header
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: NO_AUTH_INFO
+        message: No authentication information provided
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressFormat:
+      summary: Invalid address format
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_FORMAT
+        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressCheckSum:
+      summary: Invalid address checksum
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_CHECKSUM
+        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ChainBlank:
+      summary: Chain blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: CHAIN_BLANK
+        message: Chain cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    DeadlineMustBeInFuture:
+      summary: Deadline must be in future
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TIMESTAMPS
+        message: 'Invalid timestamps: deadline must be in the future'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidWithdrawalTrackingId:
+      summary: Invalid withdrawal tracking ID
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_TRACKING_ID
+        message: 'Invalid tracking ID format: ''not-a-uuid'''
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WalletAddressBlank:
+      summary: Wallet address blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_ADDRESS
+        message: Wallet address cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    SignatureRequired:
+      summary: Withdrawal signature is blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_SIGNATURE
+        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Withdrawal signature is blank'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WithdrawalTrackingIdNotFound:
+      summary: Withdrawal tracking ID not found
+      value:
+        code: NOT_FOUND_ERROR
+        internalCode: RESOURCE_NOT_FOUND
+        message: withdrawals/{trackingId} with identifier '550e8400-e29b-41d4-a716-446655440000' not found
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
   schemas:
+    WithdrawalResponse:
+      type: object
+      required:
+      - trackingId
+      properties:
+        trackingId:
+          type: string
+          description: Tracking ID (UUID) returned from withdrawal creation
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
     GetWithdrawalVersionResponse:
       type: object
       required:
@@ -342,6 +589,41 @@ components:
           type: string
           description: Current version of the rebalancer contracts used for EIP-712 signing domain
           example: '1'
+    ApiError:
+      type: object
+      required:
+      - code
+      - internalCode
+      - message
+      properties:
+        code:
+          type: string
+          description: Error category identifier
+        internalCode:
+          type: string
+          description: More specific error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracking
+        retryAfterSeconds:
+          type: integer
+          description: Seconds to wait before retrying (for rate limiting)
+    WithdrawalStatusResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - PROCESSING
+          - SUCCESS
+          - FAILED
+          description: Current status of the withdrawal
     WithdrawalRequest:
       type: object
       required:
@@ -396,288 +678,6 @@ components:
           type: string
           pattern: ^0x[a-fA-F0-9]{40}$
           description: Pool contract address to withdraw from (must be checksummed per EIP-55)
-    WithdrawalResponse:
-      type: object
-      required:
-      - trackingId
-      properties:
-        trackingId:
-          type: string
-          description: Tracking ID (UUID) returned from withdrawal creation
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
-    ApiError:
-      type: object
-      required:
-      - code
-      - internalCode
-      - message
-      properties:
-        code:
-          type: string
-          description: Error category identifier
-        internalCode:
-          type: string
-          description: More specific error identifier
-        message:
-          type: string
-          description: Human-readable error message
-        requestId:
-          type: string
-          format: uuid
-          description: Unique request identifier for tracking
-        retryAfterSeconds:
-          type: integer
-          description: Seconds to wait before retrying (for rate limiting)
-    WithdrawalStatusResponse:
-      type: object
-      required:
-      - status
-      properties:
-        status:
-          type: string
-          enum:
-          - PROCESSING
-          - SUCCESS
-          - FAILED
-          description: Current status of the withdrawal
-  examples:
-    InvalidAddressCheckSum:
-      summary: Invalid address checksum
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_ADDRESS_CHECKSUM
-        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    ChainBlank:
-      summary: Chain blank
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: CHAIN_BLANK
-        message: Chain cannot be blank
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    WithdrawalNotAllowed:
-      summary: Withdrawal not allowed during refill
-      value:
-        code: CONFLICT_ERROR
-        internalCode: WITHDRAWAL_NOT_ALLOWED
-        message: 'Withdrawal not allowed: Withdrawals from AAVE on LINEA are not allowed while a card refill is in progress.'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    SignatureRequired:
-      summary: Withdrawal signature is blank
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_SIGNATURE
-        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Withdrawal signature is blank'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    AmountTooLow:
-      summary: Amount too low for deposit
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: AMOUNT_TOO_LOW
-        message: Amount is too low. Minimum required amount is 100000 raw units for operation 'DEPOSIT' on chain 'linea'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    ChainNotSupported:
-      summary: Chain not supported
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: CHAIN_NOT_SUPPORTED
-        message: 'Chain ''STX'' is not supported. Supported chains: eth, base, polygon, arbitrum, optimism, avax, linea'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    WithdrawalTrackingIdNotFound:
-      summary: Withdrawal tracking ID not found
-      value:
-        code: NOT_FOUND_ERROR
-        internalCode: RESOURCE_NOT_FOUND
-        message: withdrawals/{trackingId} with identifier '550e8400-e29b-41d4-a716-446655440000' not found
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    TokenNotSupported:
-      summary: Token not supported
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: TOKEN_NOT_SUPPORTED
-        message: 'Token ''RLUSD'' is not supported. Supported tokens: USDC, MUSD, USDT'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    MissingWithdrawalTrackingId:
-      summary: Missing withdrawal tracking ID
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: BLANK_TRACKING_ID
-        message: Tracking ID cannot be blank
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    ProtocolNotFound:
-      summary: Protocol not found for pool contract
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: ILLEGAL_ARGUMENT
-        message: 'Illegal argument: No protocol found for token ''USDT'' on chain ''linea'' with pool contract ''0xCBeF9be95738290188B25ca9A6Dd2bEc417a578c'''
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    DeadlineMaxOneMinuteInFuture:
-      summary: Deadline too far in future
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_TIMESTAMPS
-        message: 'Invalid timestamps: deadline must not be more than 1 minute in the future'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidAddressFormat:
-      summary: Invalid address format
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_ADDRESS_FORMAT
-        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InsufficientBalance:
-      summary: Insufficient wallet balance
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INSUFFICIENT_BALANCE
-        message: Insufficient balance. Available balance is 500000 raw units, but request required amount is 1000000 raw units.
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    DeadlineMustBeInFuture:
-      summary: Deadline must be in future
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_TIMESTAMPS
-        message: 'Invalid timestamps: deadline must be in the future'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    UnauthorizedNoHeader:
-      summary: No authorization header
-      value:
-        code: AUTHENTICATION_FAILED
-        internalCode: NO_AUTH_INFO
-        message: No authentication information provided
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidWithdrawalTrackingId:
-      summary: Invalid withdrawal tracking ID
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_TRACKING_ID
-        message: 'Invalid tracking ID format: ''not-a-uuid'''
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    FailedWithdrawSignatureValidation:
-      summary: Failed withdrawal signature validation
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_SIGNATURE
-        message: 'Invalid signature for address ''0x1234567890123456789012345678901234567890'': Withdrawal signature verification failed'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    WalletAddressBlank:
-      summary: Wallet address blank
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: BLANK_ADDRESS
-        message: Wallet address cannot be blank
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-  responses:
-    Forbidden:
-      description: User is not authorized to perform this action
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            forbiddenGeneric:
-              summary: Forbidden - not authorized
-              value:
-                code: FORBIDDEN
-                internalCode: FORBIDDEN_GENERIC
-                message: User is not authorized to perform this action
-                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-                retryAfterSeconds: null
-    UnauthorizedNoHeader:
-      description: No authorization header provided
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            unauthorizedNoHeader:
-              $ref: '#/components/examples/UnauthorizedNoHeader'
-    InternalError:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            Internal Error:
-              value:
-                code: INTERNAL_ERROR
-                internalCode: INTERNAL_ERROR
-                message: An unexpected error occurred while processing your request
-                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-                retryAfterSeconds: null
-    RateLimitExceeded:
-      description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
-
-
-        Response headers (when throttled):
-
-        - `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).
-
-        - `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).
-
-        - `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).
-
-        - `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.
-
-
-        `internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).
-
-        '
-      headers:
-        Retry-After:
-          description: Seconds to wait before retrying this endpoint.
-          schema:
-            type: integer
-            example: 3
-        X-RateLimit-Limit:
-          description: Maximum number of requests allowed in the current window for this endpoint.
-          schema:
-            type: integer
-            example: 1
-        X-RateLimit-Remaining:
-          description: Remaining requests in the current window.
-          schema:
-            type: integer
-            example: 0
-        X-RateLimit-Reset:
-          description: Unix timestamp (seconds) when the current limit window resets.
-          schema:
-            type: integer
-            format: int64
-            example: 1713264123
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            rateLimitExceededPerIp:
-              summary: Rate limit exceeded (per client IP)
-              value:
-                code: RATE_LIMIT_EXCEEDED
-                internalCode: THROTTLE_PER_IP
-                message: Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.
-                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-                retryAfterSeconds: 3
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

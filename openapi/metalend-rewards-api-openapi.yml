@@ -146,159 +146,6 @@ paths:
         mode: free
 components:
   schemas:
-    ChainExplorer:
-      type: object
-      required:
-      - chainId
-      - id
-      - type
-      - url
-      properties:
-        chainId:
-          type: integer
-        id:
-          type: string
-        type:
-          type: string
-        url:
-          type: string
-    GetRewardsResponse:
-      type: object
-      required:
-      - walletAddress
-      - timestamp
-      - totalClaimedUsd
-      - totalAvailableUsd
-      - rewards
-      properties:
-        walletAddress:
-          type: string
-          description: Wallet address
-        timestamp:
-          type: string
-          description: ISO timestamp
-        totalClaimedUsd:
-          type: string
-          description: Total claimed rewards in USD
-        totalAvailableUsd:
-          type: string
-          description: Total available rewards in USD
-        rewards:
-          type: array
-          items:
-            $ref: '#/components/schemas/RewardSource'
-    RewardSource:
-      type: object
-      required:
-      - source
-      - rewardItems
-      properties:
-        source:
-          type: string
-          description: Reward source name
-        rewardItems:
-          type: array
-          items:
-            $ref: '#/components/schemas/RewardItem'
-    VestingInfo:
-      type: object
-      required:
-      - totalAllocatedRaw
-      - totalAllocatedFormatted
-      - unlockedRaw
-      - unlockedFormatted
-      - lockedRaw
-      - lockedFormatted
-      - vestingStartTime
-      - vestingEndTime
-      - vestingDuration
-      - vestingGranularity
-      - initialUnlockBps
-      - bpsDenominator
-      - progressPercentage
-      - daysElapsed
-      - daysTotal
-      - stepsCompleted
-      - stepsTotal
-      properties:
-        totalAllocatedRaw:
-          type: string
-        totalAllocatedFormatted:
-          type: string
-        unlockedRaw:
-          type: string
-        unlockedFormatted:
-          type: string
-        lockedRaw:
-          type: string
-        lockedFormatted:
-          type: string
-        vestingStartTime:
-          type: integer
-        vestingEndTime:
-          type: integer
-        vestingDuration:
-          type: integer
-        vestingGranularity:
-          type: integer
-        initialUnlockBps:
-          type: integer
-        bpsDenominator:
-          type: integer
-        progressPercentage:
-          type: string
-        daysElapsed:
-          type: integer
-        daysTotal:
-          type: integer
-        stepsCompleted:
-          type: integer
-        stepsTotal:
-          type: integer
-    ClaimTransaction:
-      type: object
-      required:
-      - to
-      - chainId
-      - chain
-      - method
-      - params
-      - abi
-      - calldata
-      properties:
-        to:
-          type: string
-          description: 'The rewards distributor contract address. Use as the `to` field of the transaction.
-
-            '
-        chainId:
-          type: integer
-          description: 'The EVM chain ID to send the transaction on. Ensure the wallet is on this chain  before calling sendTransaction.
-
-            '
-        chain:
-          type: string
-          description: Human-readable chain name (informational, e.g. "ethereum", "linea").
-        method:
-          type: string
-          description: 'The contract function signature — informational only.  The value is "claimRewards(address,address[],uint256[],bytes32[][])". Do NOT use this to build the transaction — use `calldata` directly.
-
-            '
-        params:
-          $ref: '#/components/schemas/ClaimTransactionParams'
-          description: 'The decoded parameters passed to claimRewards — informational only. Do NOT use these to re-encode the calldata — use `calldata` directly.
-
-            '
-        abi:
-          type: string
-          description: 'The ABI fragment for the claimRewards function — informational only. Do NOT use this to re-encode the calldata — use `calldata` directly.
-
-            '
-        calldata:
-          type: string
-          description: 'Fully ABI-encoded transaction data, ready to submit as-is. Use this as the `data` field of sendTransaction.  This includes the function selector and all encoded arguments  (distributor, token addresses, amounts, merkle proofs). Example: walletClient.sendTransaction({ to, data: calldata, chainId })
-
-            '
     ClaimTransactionParams:
       type: object
       required:
@@ -379,29 +226,63 @@ components:
           description: 'Pre-built transaction to claim this reward item on-chain. Non-null when  `availableRaw` > "0". To claim: send a transaction with  `to = claimTransaction.to`, `data = claimTransaction.calldata`,  `chainId = claimTransaction.chainId`. No additional encoding needed.
 
             '
-    ApiError:
+    ClaimTransaction:
       type: object
       required:
-      - code
-      - internalCode
-      - message
+      - to
+      - chainId
+      - chain
+      - method
+      - params
+      - abi
+      - calldata
       properties:
-        code:
+        to:
           type: string
-          description: Error category identifier
-        internalCode:
-          type: string
-          description: More specific error identifier
-        message:
-          type: string
-          description: Human-readable error message
-        requestId:
-          type: string
-          format: uuid
-          description: Unique request identifier for tracking
-        retryAfterSeconds:
+          description: 'The rewards distributor contract address. Use as the `to` field of the transaction.
+
+            '
+        chainId:
           type: integer
-          description: Seconds to wait before retrying (for rate limiting)
+          description: 'The EVM chain ID to send the transaction on. Ensure the wallet is on this chain  before calling sendTransaction.
+
+            '
+        chain:
+          type: string
+          description: Human-readable chain name (informational, e.g. "ethereum", "linea").
+        method:
+          type: string
+          description: 'The contract function signature — informational only.  The value is "claimRewards(address,address[],uint256[],bytes32[][])". Do NOT use this to build the transaction — use `calldata` directly.
+
+            '
+        params:
+          $ref: '#/components/schemas/ClaimTransactionParams'
+          description: 'The decoded parameters passed to claimRewards — informational only. Do NOT use these to re-encode the calldata — use `calldata` directly.
+
+            '
+        abi:
+          type: string
+          description: 'The ABI fragment for the claimRewards function — informational only. Do NOT use this to re-encode the calldata — use `calldata` directly.
+
+            '
+        calldata:
+          type: string
+          description: 'Fully ABI-encoded transaction data, ready to submit as-is. Use this as the `data` field of sendTransaction.  This includes the function selector and all encoded arguments  (distributor, token addresses, amounts, merkle proofs). Example: walletClient.sendTransaction({ to, data: calldata, chainId })
+
+            '
+    RewardSource:
+      type: object
+      required:
+      - source
+      - rewardItems
+      properties:
+        source:
+          type: string
+          description: Reward source name
+        rewardItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/RewardItem'
     RewardChainInfo:
       type: object
       required:
@@ -458,7 +339,134 @@ components:
           - string
           - 'null'
           description: Token contract version
+    ApiError:
+      type: object
+      required:
+      - code
+      - internalCode
+      - message
+      properties:
+        code:
+          type: string
+          description: Error category identifier
+        internalCode:
+          type: string
+          description: More specific error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracking
+        retryAfterSeconds:
+          type: integer
+          description: Seconds to wait before retrying (for rate limiting)
+    VestingInfo:
+      type: object
+      required:
+      - totalAllocatedRaw
+      - totalAllocatedFormatted
+      - unlockedRaw
+      - unlockedFormatted
+      - lockedRaw
+      - lockedFormatted
+      - vestingStartTime
+      - vestingEndTime
+      - vestingDuration
+      - vestingGranularity
+      - initialUnlockBps
+      - bpsDenominator
+      - progressPercentage
+      - daysElapsed
+      - daysTotal
+      - stepsCompleted
+      - stepsTotal
+      properties:
+        totalAllocatedRaw:
+          type: string
+        totalAllocatedFormatted:
+          type: string
+        unlockedRaw:
+          type: string
+        unlockedFormatted:
+          type: string
+        lockedRaw:
+          type: string
+        lockedFormatted:
+          type: string
+        vestingStartTime:
+          type: integer
+        vestingEndTime:
+          type: integer
+        vestingDuration:
+          type: integer
+        vestingGranularity:
+          type: integer
+        initialUnlockBps:
+          type: integer
+        bpsDenominator:
+          type: integer
+        progressPercentage:
+          type: string
+        daysElapsed:
+          type: integer
+        daysTotal:
+          type: integer
+        stepsCompleted:
+          type: integer
+        stepsTotal:
+          type: integer
+    ChainExplorer:
+      type: object
+      required:
+      - chainId
+      - id
+      - type
+      - url
+      properties:
+        chainId:
+          type: integer
+        id:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+    GetRewardsResponse:
+      type: object
+      required:
+      - walletAddress
+      - timestamp
+      - totalClaimedUsd
+      - totalAvailableUsd
+      - rewards
+      properties:
+        walletAddress:
+          type: string
+          description: Wallet address
+        timestamp:
+          type: string
+          description: ISO timestamp
+        totalClaimedUsd:
+          type: string
+          description: Total claimed rewards in USD
+        totalAvailableUsd:
+          type: string
+          description: Total available rewards in USD
+        rewards:
+          type: array
+          items:
+            $ref: '#/components/schemas/RewardSource'
   examples:
+    RebalancerDoesNotExistForWallet:
+      summary: Rebalancer does not exist for wallet
+      value:
+        code: INTERNAL_ERROR
+        internalCode: REBALANCER_DOES_NOT_EXIST_FOR_WALLET
+        message: Rebalancer does not exist for wallet address '0x1234567890123456789012345678901234567890'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
     UserDoesNotExist:
       summary: User does not exist
       value:
@@ -467,12 +475,12 @@ components:
         message: User does not exist for wallet address '0x1234567890123456789012345678901234567890'
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
-    RebalancerDoesNotExistForWallet:
-      summary: Rebalancer does not exist for wallet
+    InvalidAddressFormat:
+      summary: Invalid address format
       value:
-        code: INTERNAL_ERROR
-        internalCode: REBALANCER_DOES_NOT_EXIST_FOR_WALLET
-        message: Rebalancer does not exist for wallet address '0x1234567890123456789012345678901234567890'
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_FORMAT
+        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
     UnauthorizedNoHeader:
@@ -483,14 +491,6 @@ components:
         message: No authentication information provided
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
-    InvalidAddressCheckSum:
-      summary: Invalid address checksum
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_ADDRESS_CHECKSUM
-        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
     WalletAddressBlank:
       summary: Wallet address blank
       value:
@@ -499,12 +499,12 @@ components:
         message: Wallet address cannot be blank
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
-    InvalidAddressFormat:
-      summary: Invalid address format
+    InvalidAddressCheckSum:
+      summary: Invalid address checksum
       value:
         code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_ADDRESS_FORMAT
-        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
+        internalCode: INVALID_ADDRESS_CHECKSUM
+        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
   responses:

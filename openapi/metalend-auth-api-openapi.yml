@@ -145,118 +145,7 @@ paths:
       x-agentcash-auth:
         mode: free
 components:
-  examples:
-    NotAnEvmAddress:
-      summary: Not an EVM address
-      value:
-        code: AUTHENTICATION_FAILED
-        internalCode: INVALID_EVM_ADDRESS
-        message: Invalid wallet address
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    UnauthorizedInvalidSignature:
-      summary: Invalid signature
-      value:
-        code: AUTHENTICATION_FAILED
-        internalCode: INVALID_SIGNATURE
-        message: Invalid signature for address '0x14848abf0125de79e0a5f3caa7f4ea9664a988e8'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidSiweDetails:
-      summary: Invalid SIWE details
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_SIWE_DETAILS
-        message: 'Invalid SIWE details: SIWE domain cannot be blank'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    ChainNotSupported:
-      summary: Chain not supported
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: CHAIN_NOT_SUPPORTED
-        message: 'Chain ''STX'' is not supported. Supported chains: eth, base, polygon, arbitrum, optimism, avax, linea'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    UnauthorizedNoHeader:
-      summary: No authorization header
-      value:
-        code: AUTHENTICATION_FAILED
-        internalCode: NO_AUTH_INFO
-        message: No authentication information provided
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    WalletAddressBlank:
-      summary: Wallet address blank
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: BLANK_ADDRESS
-        message: Wallet address cannot be blank
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    AuthExpiredOrNotCreated:
-      summary: Authentication expired or not created
-      value:
-        code: AUTHENTICATION_FAILED
-        internalCode: AUTH_MESSAGE_EXPIRED_OR_NOT_CREATED
-        message: Authentication message has expired or was not created
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidAddressCheckSum:
-      summary: Invalid address checksum
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_ADDRESS_CHECKSUM
-        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    ChainBlank:
-      summary: Chain blank
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: CHAIN_BLANK
-        message: Chain cannot be blank
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    InvalidAddressFormat:
-      summary: Invalid address format
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: INVALID_ADDRESS_FORMAT
-        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
   schemas:
-    VerifyChallengeRequest:
-      type: object
-      required:
-      - walletAddress
-      - signature
-      properties:
-        walletAddress:
-          type: string
-          pattern: ^0x[a-fA-F0-9]{40}$
-          description: User's Ethereum wallet address (must be checksummed per EIP-55)
-          example: '0x14848abF0125De79e0A5F3caA7F4EA9664a988e8'
-        signature:
-          type: string
-          description: Signed challenge message using personal_sign method
-          example: '0x9c1efc293e476948580195863a66203816a3d437a04a92df95c1be979010031c35dbd856110eb161aa59f72cbfe49ff3a64fda3bdb094c2c321edfb13c8215161b'
-        chain:
-          type:
-          - string
-          - 'null'
-          enum:
-          - ETHEREUM
-          - BASE
-          - POLYGON
-          - ARBITRUM
-          - OPTIMISM
-          - AVALANCHE
-          - LINEA
-          default: ETHEREUM
-          description: The blockchain network for signature verification. Defaults to "ETHEREUM" if omitted. Required for Smart Contract Wallets to specify the chain on which verification is performed.
-          example: ETHEREUM
     VerifyChallengeResponse:
       type: object
       required:
@@ -265,6 +154,29 @@ components:
         jwt:
           type: string
           description: Issued JWT for authenticated requests
+    ApiError:
+      type: object
+      required:
+      - code
+      - internalCode
+      - message
+      properties:
+        code:
+          type: string
+          description: Error category identifier
+        internalCode:
+          type: string
+          description: More specific error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracking
+        retryAfterSeconds:
+          type: integer
+          description: Seconds to wait before retrying (for rate limiting)
     GetChallengeRequest:
       type: object
       required:
@@ -305,29 +217,36 @@ components:
           - AVALANCHE
           - LINEA
           example: ETHEREUM
-    ApiError:
+    VerifyChallengeRequest:
       type: object
       required:
-      - code
-      - internalCode
-      - message
+      - walletAddress
+      - signature
       properties:
-        code:
+        walletAddress:
           type: string
-          description: Error category identifier
-        internalCode:
+          pattern: ^0x[a-fA-F0-9]{40}$
+          description: User's Ethereum wallet address (must be checksummed per EIP-55)
+          example: '0x14848abF0125De79e0A5F3caA7F4EA9664a988e8'
+        signature:
           type: string
-          description: More specific error identifier
-        message:
-          type: string
-          description: Human-readable error message
-        requestId:
-          type: string
-          format: uuid
-          description: Unique request identifier for tracking
-        retryAfterSeconds:
-          type: integer
-          description: Seconds to wait before retrying (for rate limiting)
+          description: Signed challenge message using personal_sign method
+          example: '0x9c1efc293e476948580195863a66203816a3d437a04a92df95c1be979010031c35dbd856110eb161aa59f72cbfe49ff3a64fda3bdb094c2c321edfb13c8215161b'
+        chain:
+          type:
+          - string
+          - 'null'
+          enum:
+          - ETHEREUM
+          - BASE
+          - POLYGON
+          - ARBITRUM
+          - OPTIMISM
+          - AVALANCHE
+          - LINEA
+          default: ETHEREUM
+          description: The blockchain network for signature verification. Defaults to "ETHEREUM" if omitted. Required for Smart Contract Wallets to specify the chain on which verification is performed.
+          example: ETHEREUM
     GetChallengeResponse:
       type: object
       required:
@@ -336,7 +255,97 @@ components:
         message:
           type: string
           description: Challenge message to sign using personal_sign method
+  examples:
+    InvalidAddressCheckSum:
+      summary: Invalid address checksum
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_CHECKSUM
+        message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    NotAnEvmAddress:
+      summary: Not an EVM address
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: INVALID_EVM_ADDRESS
+        message: Invalid wallet address
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidAddressFormat:
+      summary: Invalid address format
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_ADDRESS_FORMAT
+        message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    AuthExpiredOrNotCreated:
+      summary: Authentication expired or not created
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: AUTH_MESSAGE_EXPIRED_OR_NOT_CREATED
+        message: Authentication message has expired or was not created
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ChainNotSupported:
+      summary: Chain not supported
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: CHAIN_NOT_SUPPORTED
+        message: 'Chain ''STX'' is not supported. Supported chains: eth, base, polygon, arbitrum, optimism, avax, linea'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UnauthorizedInvalidSignature:
+      summary: Invalid signature
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: INVALID_SIGNATURE
+        message: Invalid signature for address '0x14848abf0125de79e0a5f3caa7f4ea9664a988e8'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    WalletAddressBlank:
+      summary: Wallet address blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_ADDRESS
+        message: Wallet address cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      summary: No authorization header
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: NO_AUTH_INFO
+        message: No authentication information provided
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    InvalidSiweDetails:
+      summary: Invalid SIWE details
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: INVALID_SIWE_DETAILS
+        message: 'Invalid SIWE details: SIWE domain cannot be blank'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    ChainBlank:
+      summary: Chain blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: CHAIN_BLANK
+        message: Chain cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
   responses:
+    UnauthorizedNoHeader:
+      description: No authorization header provided
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            unauthorizedNoHeader:
+              $ref: '#/components/examples/UnauthorizedNoHeader'
     InternalError:
       description: Internal server error
       content:
@@ -351,15 +360,6 @@ components:
                 message: An unexpected error occurred while processing your request
                 requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
                 retryAfterSeconds: null
-    UnauthorizedNoHeader:
-      description: No authorization header provided
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            unauthorizedNoHeader:
-              $ref: '#/components/examples/UnauthorizedNoHeader'
     RateLimitExceeded:
       description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
 

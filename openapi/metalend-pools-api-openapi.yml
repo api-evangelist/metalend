@@ -76,83 +76,6 @@ paths:
       x-agentcash-auth:
         mode: free
 components:
-  responses:
-    RateLimitExceeded:
-      description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
-
-
-        Response headers (when throttled):
-
-        - `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).
-
-        - `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).
-
-        - `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).
-
-        - `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.
-
-
-        `internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).
-
-        '
-      headers:
-        Retry-After:
-          description: Seconds to wait before retrying this endpoint.
-          schema:
-            type: integer
-            example: 3
-        X-RateLimit-Limit:
-          description: Maximum number of requests allowed in the current window for this endpoint.
-          schema:
-            type: integer
-            example: 1
-        X-RateLimit-Remaining:
-          description: Remaining requests in the current window.
-          schema:
-            type: integer
-            example: 0
-        X-RateLimit-Reset:
-          description: Unix timestamp (seconds) when the current limit window resets.
-          schema:
-            type: integer
-            format: int64
-            example: 1713264123
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            rateLimitExceededPerIp:
-              summary: Rate limit exceeded (per client IP)
-              value:
-                code: RATE_LIMIT_EXCEEDED
-                internalCode: THROTTLE_PER_IP
-                message: Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.
-                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-                retryAfterSeconds: 3
-    InternalError:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            Internal Error:
-              value:
-                code: INTERNAL_ERROR
-                internalCode: INTERNAL_ERROR
-                message: An unexpected error occurred while processing your request
-                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-                retryAfterSeconds: null
-    UnauthorizedNoHeader:
-      description: No authorization header provided
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            unauthorizedNoHeader:
-              $ref: '#/components/examples/UnauthorizedNoHeader'
   schemas:
     PoolApyInfo:
       type: object
@@ -187,22 +110,6 @@ components:
           type: string
           description: Performance fee percentage (formatted to 2 decimals)
           example: '1.00'
-    PoolSignData:
-      type: object
-      required:
-      - protocolId
-      - poolAddress
-      - domainId
-      properties:
-        protocolId:
-          type: integer
-          description: Protocol ID (0=Aave, 1=Morpho, 2=Euler)
-        poolAddress:
-          type: string
-          description: Pool contract address
-        domainId:
-          type: integer
-          description: Domain ID for the chain
     Token:
       type: object
       required:
@@ -270,6 +177,22 @@ components:
         retryAfterSeconds:
           type: integer
           description: Seconds to wait before retrying (for rate limiting)
+    PoolSignData:
+      type: object
+      required:
+      - protocolId
+      - poolAddress
+      - domainId
+      properties:
+        protocolId:
+          type: integer
+          description: Protocol ID (0=Aave, 1=Morpho, 2=Euler)
+        poolAddress:
+          type: string
+          description: Pool contract address
+        domainId:
+          type: integer
+          description: Domain ID for the chain
     Pool:
       description: "**Important: `poolAddress` is NOT globally unique across tokens.** For Aave V3, the same `poolAddress` (the Aave lending pool contract) is shared  across all tokens on a given chain. For example, Aave V3 USDC, USDT, and RLUSD  on Ethereum all have the same `poolAddress`.\nA pool is uniquely identified by the combination of THREE fields together:\n  - `poolAddress`\n  - `chain`\n  - `underlyingToken.symbol`\n\nWhen filtering pools by token (e.g. \"show only USDC pools\"), ALWAYS filter on  `underlyingToken.symbol`. Never filter on `poolAddress` alone for Aave pools.\n"
       type: object
@@ -346,6 +269,83 @@ components:
         blacklisted:
           type: boolean
           description: Indicates whether the pool has been blacklisted (banned) due to a third party critical security issue. Blacklisted pools are deprecated and retained solely for backwards compatibility. New deposits are never routed to blacklisted pools, and all existing balances are automatically rebalanced out of such pools when possible (balance is large enough to pay on-behalf fee and there is enough liquidity to withdraw).
+  responses:
+    UnauthorizedNoHeader:
+      description: No authorization header provided
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            unauthorizedNoHeader:
+              $ref: '#/components/examples/UnauthorizedNoHeader'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            Internal Error:
+              value:
+                code: INTERNAL_ERROR
+                internalCode: INTERNAL_ERROR
+                message: An unexpected error occurred while processing your request
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: null
+    RateLimitExceeded:
+      description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
+
+
+        Response headers (when throttled):
+
+        - `Retry-After`: seconds to wait before retrying (matches the rate-limit window duration for that endpoint).
+
+        - `X-RateLimit-Limit`: maximum requests allowed in the window (e.g. `1`).
+
+        - `X-RateLimit-Remaining`: remaining requests in the window (`0` when throttled).
+
+        - `X-RateLimit-Reset`: Unix timestamp (seconds) when the limit window resets.
+
+
+        `internalCode` in the JSON body is `THROTTLE_PER_IP` for IP-scoped limits (other values may apply for different scopes in the backend).
+
+        '
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying this endpoint.
+          schema:
+            type: integer
+            example: 3
+        X-RateLimit-Limit:
+          description: Maximum number of requests allowed in the current window for this endpoint.
+          schema:
+            type: integer
+            example: 1
+        X-RateLimit-Remaining:
+          description: Remaining requests in the current window.
+          schema:
+            type: integer
+            example: 0
+        X-RateLimit-Reset:
+          description: Unix timestamp (seconds) when the current limit window resets.
+          schema:
+            type: integer
+            format: int64
+            example: 1713264123
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            rateLimitExceededPerIp:
+              summary: Rate limit exceeded (per client IP)
+              value:
+                code: RATE_LIMIT_EXCEEDED
+                internalCode: THROTTLE_PER_IP
+                message: Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.
+                requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+                retryAfterSeconds: 3
   examples:
     UnauthorizedNoHeader:
       summary: No authorization header

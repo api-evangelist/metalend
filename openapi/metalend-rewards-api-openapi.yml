@@ -146,6 +146,115 @@ paths:
         mode: free
 components:
   schemas:
+    ChainExplorer:
+      type: object
+      required:
+      - chainId
+      - id
+      - type
+      - url
+      properties:
+        chainId:
+          type: integer
+        id:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+    RewardSource:
+      type: object
+      required:
+      - source
+      - rewardItems
+      properties:
+        source:
+          type: string
+          description: Reward source name
+        rewardItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/RewardItem'
+    GetRewardsResponse:
+      type: object
+      required:
+      - walletAddress
+      - timestamp
+      - totalClaimedUsd
+      - totalAvailableUsd
+      - rewards
+      properties:
+        walletAddress:
+          type: string
+          description: Wallet address
+        timestamp:
+          type: string
+          description: ISO timestamp
+        totalClaimedUsd:
+          type: string
+          description: Total claimed rewards in USD
+        totalAvailableUsd:
+          type: string
+          description: Total available rewards in USD
+        rewards:
+          type: array
+          items:
+            $ref: '#/components/schemas/RewardSource'
+    VestingInfo:
+      type: object
+      required:
+      - totalAllocatedRaw
+      - totalAllocatedFormatted
+      - unlockedRaw
+      - unlockedFormatted
+      - lockedRaw
+      - lockedFormatted
+      - vestingStartTime
+      - vestingEndTime
+      - vestingDuration
+      - vestingGranularity
+      - initialUnlockBps
+      - bpsDenominator
+      - progressPercentage
+      - daysElapsed
+      - daysTotal
+      - stepsCompleted
+      - stepsTotal
+      properties:
+        totalAllocatedRaw:
+          type: string
+        totalAllocatedFormatted:
+          type: string
+        unlockedRaw:
+          type: string
+        unlockedFormatted:
+          type: string
+        lockedRaw:
+          type: string
+        lockedFormatted:
+          type: string
+        vestingStartTime:
+          type: integer
+        vestingEndTime:
+          type: integer
+        vestingDuration:
+          type: integer
+        vestingGranularity:
+          type: integer
+        initialUnlockBps:
+          type: integer
+        bpsDenominator:
+          type: integer
+        progressPercentage:
+          type: string
+        daysElapsed:
+          type: integer
+        daysTotal:
+          type: integer
+        stepsCompleted:
+          type: integer
+        stepsTotal:
+          type: integer
     ClaimTransactionParams:
       type: object
       required:
@@ -170,6 +279,41 @@ components:
             type: array
             items:
               type: string
+    Token:
+      type: object
+      required:
+      - symbol
+      - name
+      - address
+      - decimals
+      properties:
+        symbol:
+          type: string
+          description: Token symbol
+          enum:
+          - USDC
+          - MUSD
+          - USDT
+          - RLUSD
+          example: USDC
+        name:
+          type: string
+          description: Token full name
+          example: USD Coin
+        address:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+          example: '0x1234567890123456789012345678901234567890'
+          description: Token contract address
+        decimals:
+          type: integer
+          description: Token decimals
+          example: 6
+        version:
+          type:
+          - string
+          - 'null'
+          description: Token contract version
     RewardItem:
       type: object
       required:
@@ -226,6 +370,50 @@ components:
           description: 'Pre-built transaction to claim this reward item on-chain. Non-null when  `availableRaw` > "0". To claim: send a transaction with  `to = claimTransaction.to`, `data = claimTransaction.calldata`,  `chainId = claimTransaction.chainId`. No additional encoding needed.
 
             '
+    RewardChainInfo:
+      type: object
+      required:
+      - id
+      - name
+      - icon
+      - endOfDisputePeriod
+      - explorers
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        icon:
+          type: string
+        endOfDisputePeriod:
+          type: integer
+        explorers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChainExplorer'
+    ApiError:
+      type: object
+      required:
+      - code
+      - internalCode
+      - message
+      properties:
+        code:
+          type: string
+          description: Error category identifier
+        internalCode:
+          type: string
+          description: More specific error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracking
+        retryAfterSeconds:
+          type: integer
+          description: Seconds to wait before retrying (for rate limiting)
     ClaimTransaction:
       type: object
       required:
@@ -270,233 +458,13 @@ components:
           description: 'Fully ABI-encoded transaction data, ready to submit as-is. Use this as the `data` field of sendTransaction.  This includes the function selector and all encoded arguments  (distributor, token addresses, amounts, merkle proofs). Example: walletClient.sendTransaction({ to, data: calldata, chainId })
 
             '
-    RewardSource:
-      type: object
-      required:
-      - source
-      - rewardItems
-      properties:
-        source:
-          type: string
-          description: Reward source name
-        rewardItems:
-          type: array
-          items:
-            $ref: '#/components/schemas/RewardItem'
-    RewardChainInfo:
-      type: object
-      required:
-      - id
-      - name
-      - icon
-      - endOfDisputePeriod
-      - explorers
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        icon:
-          type: string
-        endOfDisputePeriod:
-          type: integer
-        explorers:
-          type: array
-          items:
-            $ref: '#/components/schemas/ChainExplorer'
-    Token:
-      type: object
-      required:
-      - symbol
-      - name
-      - address
-      - decimals
-      properties:
-        symbol:
-          type: string
-          description: Token symbol
-          enum:
-          - USDC
-          - MUSD
-          - USDT
-          - RLUSD
-          example: USDC
-        name:
-          type: string
-          description: Token full name
-          example: USD Coin
-        address:
-          type: string
-          pattern: ^0x[a-fA-F0-9]{40}$
-          example: '0x1234567890123456789012345678901234567890'
-          description: Token contract address
-        decimals:
-          type: integer
-          description: Token decimals
-          example: 6
-        version:
-          type:
-          - string
-          - 'null'
-          description: Token contract version
-    ApiError:
-      type: object
-      required:
-      - code
-      - internalCode
-      - message
-      properties:
-        code:
-          type: string
-          description: Error category identifier
-        internalCode:
-          type: string
-          description: More specific error identifier
-        message:
-          type: string
-          description: Human-readable error message
-        requestId:
-          type: string
-          format: uuid
-          description: Unique request identifier for tracking
-        retryAfterSeconds:
-          type: integer
-          description: Seconds to wait before retrying (for rate limiting)
-    VestingInfo:
-      type: object
-      required:
-      - totalAllocatedRaw
-      - totalAllocatedFormatted
-      - unlockedRaw
-      - unlockedFormatted
-      - lockedRaw
-      - lockedFormatted
-      - vestingStartTime
-      - vestingEndTime
-      - vestingDuration
-      - vestingGranularity
-      - initialUnlockBps
-      - bpsDenominator
-      - progressPercentage
-      - daysElapsed
-      - daysTotal
-      - stepsCompleted
-      - stepsTotal
-      properties:
-        totalAllocatedRaw:
-          type: string
-        totalAllocatedFormatted:
-          type: string
-        unlockedRaw:
-          type: string
-        unlockedFormatted:
-          type: string
-        lockedRaw:
-          type: string
-        lockedFormatted:
-          type: string
-        vestingStartTime:
-          type: integer
-        vestingEndTime:
-          type: integer
-        vestingDuration:
-          type: integer
-        vestingGranularity:
-          type: integer
-        initialUnlockBps:
-          type: integer
-        bpsDenominator:
-          type: integer
-        progressPercentage:
-          type: string
-        daysElapsed:
-          type: integer
-        daysTotal:
-          type: integer
-        stepsCompleted:
-          type: integer
-        stepsTotal:
-          type: integer
-    ChainExplorer:
-      type: object
-      required:
-      - chainId
-      - id
-      - type
-      - url
-      properties:
-        chainId:
-          type: integer
-        id:
-          type: string
-        type:
-          type: string
-        url:
-          type: string
-    GetRewardsResponse:
-      type: object
-      required:
-      - walletAddress
-      - timestamp
-      - totalClaimedUsd
-      - totalAvailableUsd
-      - rewards
-      properties:
-        walletAddress:
-          type: string
-          description: Wallet address
-        timestamp:
-          type: string
-          description: ISO timestamp
-        totalClaimedUsd:
-          type: string
-          description: Total claimed rewards in USD
-        totalAvailableUsd:
-          type: string
-          description: Total available rewards in USD
-        rewards:
-          type: array
-          items:
-            $ref: '#/components/schemas/RewardSource'
   examples:
-    RebalancerDoesNotExistForWallet:
-      summary: Rebalancer does not exist for wallet
-      value:
-        code: INTERNAL_ERROR
-        internalCode: REBALANCER_DOES_NOT_EXIST_FOR_WALLET
-        message: Rebalancer does not exist for wallet address '0x1234567890123456789012345678901234567890'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    UserDoesNotExist:
-      summary: User does not exist
-      value:
-        code: INTERNAL_ERROR
-        internalCode: USER_DOES_NOT_EXIST
-        message: User does not exist for wallet address '0x1234567890123456789012345678901234567890'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
     InvalidAddressFormat:
       summary: Invalid address format
       value:
         code: ILLEGAL_ARGUMENT_ERROR
         internalCode: INVALID_ADDRESS_FORMAT
         message: 'Invalid address format. Expected: 0x followed by 40 hexadecimal characters.'
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    UnauthorizedNoHeader:
-      summary: No authorization header
-      value:
-        code: AUTHENTICATION_FAILED
-        internalCode: NO_AUTH_INFO
-        message: No authentication information provided
-        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
-        retryAfterSeconds: null
-    WalletAddressBlank:
-      summary: Wallet address blank
-      value:
-        code: ILLEGAL_ARGUMENT_ERROR
-        internalCode: BLANK_ADDRESS
-        message: Wallet address cannot be blank
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
     InvalidAddressCheckSum:
@@ -507,7 +475,48 @@ components:
         message: Invalid Ethereum address checksum. Please ensure the address is properly checksummed (EIP-55)
         requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
         retryAfterSeconds: null
+    WalletAddressBlank:
+      summary: Wallet address blank
+      value:
+        code: ILLEGAL_ARGUMENT_ERROR
+        internalCode: BLANK_ADDRESS
+        message: Wallet address cannot be blank
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    RebalancerDoesNotExistForWallet:
+      summary: Rebalancer does not exist for wallet
+      value:
+        code: INTERNAL_ERROR
+        internalCode: REBALANCER_DOES_NOT_EXIST_FOR_WALLET
+        message: Rebalancer does not exist for wallet address '0x1234567890123456789012345678901234567890'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UnauthorizedNoHeader:
+      summary: No authorization header
+      value:
+        code: AUTHENTICATION_FAILED
+        internalCode: NO_AUTH_INFO
+        message: No authentication information provided
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
+    UserDoesNotExist:
+      summary: User does not exist
+      value:
+        code: INTERNAL_ERROR
+        internalCode: USER_DOES_NOT_EXIST
+        message: User does not exist for wallet address '0x1234567890123456789012345678901234567890'
+        requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
+        retryAfterSeconds: null
   responses:
+    UnauthorizedNoHeader:
+      description: No authorization header provided
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            unauthorizedNoHeader:
+              $ref: '#/components/examples/UnauthorizedNoHeader'
     RateLimitExceeded:
       description: 'Too many requests for this endpoint. Limits are enforced per client IP for the public API routes backed by `RebalancerResource` (and related resources using the same filter).
 
@@ -561,15 +570,6 @@ components:
                 message: Rate limit exceeded. Maximum 1 requests per 3 seconds allowed. Please try again later.
                 requestId: 2c2f3dc1-d19a-49cb-b695-37d025e551b3
                 retryAfterSeconds: 3
-    UnauthorizedNoHeader:
-      description: No authorization header provided
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-          examples:
-            unauthorizedNoHeader:
-              $ref: '#/components/examples/UnauthorizedNoHeader'
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

@@ -3,10 +3,14 @@
   "feeds": [
     {
       "source": "https://medium.com/metalend",
+      "error": "HTTPError"
+    },
+    {
+      "source": "https://medium.com/feed/metalend",
       "feed_url": "https://medium.com/feed/metalend",
       "title": "",
       "saved": 0,
-      "method": "discovered"
+      "method": "feed"
     },
     {
       "source": "https://metalend-inc.gitbook.io/litepaper/metalend-litepaper/support",
@@ -16,6 +20,6 @@
       "method": "none"
     }
   ],
-  "post_count": 0,
-  "fetched": "2026-10-10T13:15:00Z"
+  "post_count": 10,
+  "fetched": "2026-10-17T14:53:57Z"
 }

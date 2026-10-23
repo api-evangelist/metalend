@@ -747,3 +747,9 @@ components:
 externalDocs:
   description: Litepaper
   url: https://metalend-inc.gitbook.io/litepaper
+x-provenance:
+  method: harvested
+  publisher: MetaLend
+  source: https://api.metalend.tech/openapi.json
+  note: split by refine-openapis from the provider's own published document, verified by fetch (openapi/_original/*.fetch.json);
+    stamped by stamp-openapi-provenance.py (roadmap#793)

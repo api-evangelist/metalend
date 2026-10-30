@@ -64,6 +64,138 @@
 > Full detail: **[Where this data comes from](https://apievangelist.com/about/where-our-data-comes-from)**
 <!-- API-EVANGELIST-PROVENANCE:END -->
 
-MetaLend is a company surfaced as a portfolio company of pantera-capital and added to the API Evangelist network as a stub for enrichment. Sector: crypto. This profile is a lead awaiting the enrichment pipeline.
+MetaLend is a DeFi "earn and spend" platform that aggregates lending pools across protocols (Aave, Morpho, Euler) and chains (Base, Ethereum, Polygon, Arbitrum, Linea) behind a single cross-chain Rebalancing API. It continuously repositions user-approved, self-custodied capital into the best-yielding pools while keeping funds instantly spendable via a debit card. The API is notably agent-native: it serves an AI agent flow guide at GET /SKILL.md, ships SIWE challenge/verify JWT auth with EIP-191/EIP-712/EIP-3009 wallet signing, and gates its services directory behind an x402 (HTTP 402) micropayment in USDC on Base. Smart contracts are audited by Sherlock. Backed by Pantera Capital.
 
-Backed by: pantera-capital — https://metalend.tech/
+**Areas:** Company · Cryptocurrency · DeFi · Lending · Yield · Rebalancing · Web3 · Stablecoins · Payments · Agent-Native · Blockchain
+
+## MetaLend on APIs.io
+
+Everything profiled for MetaLend is published on APIs.io rather than in this repository. Start at the provider page — **[apis.io/providers/metalend/](https://apis.io/providers/metalend/)** — or go straight to one of the APIs or properties below.
+
+### APIs (10)
+
+- [MetaLend AI Agent Guide API](https://apis.io/apis/metalend/metalend-ai-agent-guide-api/) — Machine-readable flow guide for AI agents — signing formats, wizard flows, and integration gotchas
+- [MetaLend Auth API](https://apis.io/apis/metalend/metalend-auth-api/) — Get challenge / verify challenge authentication
+- [MetaLend Balances API](https://apis.io/apis/metalend/metalend-balances-api/) — Balance queries across pools and protocols
+- [MetaLend Deposits API](https://apis.io/apis/metalend/metalend-deposits-api/) — Deposit operations for rebalancing
+- [MetaLend Pools API](https://apis.io/apis/metalend/metalend-pools-api/) — Protocol and pool information
+- [MetaLend Rewards API](https://apis.io/apis/metalend/metalend-rewards-api/) — Reward aggregation and claim data
+- [MetaLend Services API](https://apis.io/apis/metalend/metalend-services-api/) — The Services API from MetaLend — 1 operation(s) for services.
+- [MetaLend Transaction Costs API](https://apis.io/apis/metalend/metalend-transaction-costs-api/) — Transaction cost queries
+- [MetaLend User Configuration API](https://apis.io/apis/metalend/metalend-user-configuration-api/) — User rebalancer configuration management
+- [MetaLend Withdrawals API](https://apis.io/apis/metalend/metalend-withdrawals-api/) — Withdrawal operations from pools
+
+### Published properties
+
+Each property below is a page on APIs.io carrying the machine-readable artifact and what it says.
+
+#### MCP servers (1)
+
+Model Context Protocol servers that expose the API to agents.
+
+- [metalend](https://apis.io/servers/metalend/metalend/)
+
+#### Agentic access (1)
+
+Which operations an agent can call, which act, and which need a human in the loop.
+
+- [Metalend Agentic Access](https://apis.io/agentic-access/metalend/metalend-agentic-access/)
+
+#### Collections (10)
+
+Postman and Open Collection request collections.
+
+- [MetaLend Rebalancing AI Agent Guide API](https://apis.io/collections/metalend/open-metalend-ai-agent-guide-api/)
+- [MetaLend Rebalancing AI Agent Guide Auth API](https://apis.io/collections/metalend/open-metalend-auth-api/)
+- [MetaLend Rebalancing AI Agent Guide Balances API](https://apis.io/collections/metalend/open-metalend-balances-api/)
+- [MetaLend Rebalancing AI Agent Guide Deposits API](https://apis.io/collections/metalend/open-metalend-deposits-api/)
+- [MetaLend Rebalancing AI Agent Guide Pools API](https://apis.io/collections/metalend/open-metalend-pools-api/)
+- [MetaLend Rebalancing AI Agent Guide Rewards API](https://apis.io/collections/metalend/open-metalend-rewards-api/)
+- [MetaLend Rebalancing AI Agent Guide Services API](https://apis.io/collections/metalend/open-metalend-services-api/)
+- [MetaLend Rebalancing AI Agent Guide Transaction Costs API](https://apis.io/collections/metalend/open-metalend-transaction-costs-api/)
+- [MetaLend Rebalancing AI Agent Guide User Configuration API](https://apis.io/collections/metalend/open-metalend-user-configuration-api/)
+- [MetaLend Rebalancing AI Agent Guide Withdrawals API](https://apis.io/collections/metalend/open-metalend-withdrawals-api/)
+
+#### Overlays (1)
+
+OpenAPI overlays, including conversational phrasing for each operation.
+
+- [Metalend Rebalancing Overlay](https://apis.io/overlays/metalend/metalend-rebalancing-overlay/)
+
+#### Security (2)
+
+Authentication, trust centre, and vulnerability disclosure.
+
+- [Metalend Authentication](https://apis.io/security/metalend/metalend-authentication/)
+- [Metalend Domain Security](https://apis.io/security/metalend/metalend-domain-security/)
+
+## Where to find this API
+
+Links to the company's own pages. This repository publishes no copy of their specifications — the canonical document is theirs and lives at the URLs below.
+
+- [Website](https://metalend.tech/)
+- [Documentation](https://metalend-inc.gitbook.io/litepaper)
+- [Getting started](https://api.metalend.tech/SKILL.md)
+- [API reference](https://api.metalend.tech/openapi.json)
+- [Pricing](https://metalend-inc.gitbook.io/litepaper/metalend-litepaper/apy-and-fees)
+- [Sign up](https://developer.metalend.tech)
+- [Support](https://metalend-inc.gitbook.io/litepaper/metalend-litepaper/support)
+- [Blog](https://medium.com/metalend)
+- [Compliance](https://metalend-inc.gitbook.io/litepaper/security-audits-with-sherlock)
+- [Terms of service](https://metalend-inc.gitbook.io/litepaper/terms-of-service)
+- [Privacy policy](https://metalend-inc.gitbook.io/litepaper/privacy-policy)
+
+## API Evangelist rating
+
+**Kin Score 48.8** — developing · rubric 0.25.0 · scored 2026-10-23
+
+| Facet | Score |
+|---|---|
+| Discoverability | 73.2 |
+| Contract quality | 53.5 |
+| Contract governance | 18.2 |
+| Operational transparency | 5.3 |
+| Developer ergonomics | 71.4 |
+| Access clarity | 52.6 |
+
+**Agent readiness 38.0** — agent-ready
+
+| Agent-readiness dimension | Result |
+|---|---|
+| Spec Presence | yes |
+| Agentic Access | derived (partial credit) |
+| Reversibility Documented | — |
+| MCP Server | — |
+| Auth Clarity | bearer (partial credit) |
+| Idempotency | — |
+| Error Semantics | verified |
+| OpenAPI Examples | verified |
+| Rate Limit Signal | verified |
+| Event Surface Described | — |
+| Agent Skills | yes |
+| Well Known Catalog | — |
+| Consent Identity | — |
+| Agent Card | — |
+| Dry Run Mode | — |
+| Delegated Identity | — |
+| Protected Resource Metadata | — |
+| Dynamic Client Registration | — |
+| Agentic Commerce | — |
+| Pagination Ratio | na |
+| Operation Distinctiveness | distinct |
+
+**Regulatory alignment 26.8** — Payments
+
+The rubric is published at [github.com/api-evangelist/kin-score](https://github.com/api-evangelist/kin-score). The per-check breakdown behind these numbers — which checks were earned, partial or missed — along with score history and how this provider compares to its peers, is available at [apis.io/providers/metalend/](https://apis.io/providers/metalend/).
+
+## How this profile is made
+
+API Evangelist profiles a company's public API surface the way a developer would find it: the website, developer portal and documentation, the specifications it publishes, its public repositories, and its pricing, status and changelog pages. From that it derives the properties above — contracts split per API, workflows, schemas, collections, governance rules, plans and rate limits — and scores them against the published [Kin Score rubric](https://github.com/api-evangelist/kin-score).
+
+The artifacts are published on [APIs.io](https://apis.io), not in this repository. This repository is the public record for MetaLend: the place to say something is wrong, missing or out of date, and to ask for a re-score or a removal.
+
+## Open an issue
+
+- **Something about this listing** — a wrong description, a missing API, a stale artifact or a question about the rating: [open an issue on this repository](https://github.com/api-evangelist/metalend/issues/new).
+- **A new API, or one that is not in the catalog yet** — [submit it on APIs.io](https://apis.io/add/).
+- **Anything else** — [the APIs.io inbox](https://github.com/api-search/inbox/issues/new) or [info@apievangelist.com](mailto:info@apievangelist.com).
